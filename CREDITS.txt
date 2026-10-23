@@ -1,0 +1,13 @@
+car_crop.jpg
+  "Porsche Boxster GTS" by Alexandre Prévot (Flickr 18358920523), via Wikimedia Commons
+  https://commons.wikimedia.org/wiki/File:Porsche_Boxster_GTS_(18358920523).jpg
+  License: CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0/)
+  Modified (by the UI mockup author): cropped (watermark removed by crop), background removed,
+  composited on black with reflection. This modified image is likewise licensed CC BY-SA 2.0.
+  Copied from /workspace/ui-mockup/v4/car_crop.jpg (credit text from v4/CREDITS.txt).
+  Attribution is also shown on the page (車輛 tab and 帳戶 → 素材授權).
+
+board.jpg
+  Copied from the UI mockup (/workspace/ui-mockup/v4/board.jpg, also in v3).
+  Source/license: UNKNOWN - not listed in the mockup's CREDITS.txt. It shows a generic board,
+  not the Seeed XIAO ESP32-C6. Confirm its origin with the mockup author or replace it before publishing.
