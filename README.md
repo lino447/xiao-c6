@@ -4,6 +4,8 @@
 
 線上頁面已部署於 https://lino447.github.io/xiao-c6/ ，可在 iPhone 上透過 Bluefy 瀏覽器使用。
 
+在 iPhone 上請用 Bluefy 瀏覽器開啟。
+
 ```
 xiao-c6-ble/
 ├── firmware/xiao_c6_ble/xiao_c6_ble.ino   ← 燒進 XIAO ESP32-C6 的 Arduino 程式
