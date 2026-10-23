@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<title>XIAO ESP32-C6 藍牙遙控</title>
+<style>
+  :root {
+    --bg: #0f172a; --card: #1e293b; --line: #334155; --text: #e2e8f0; --muted: #94a3b8;
+    --accent: #38bdf8; --ok: #22c55e; --warn: #f59e0b; --err: #ef4444;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    padding: 16px; padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+  main { max-width: 640px; margin: 0 auto; display: grid; gap: 14px; }
+  h1 { font-size: 1.35rem; margin: 4px 0 0; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+  .card h2 { font-size: 1rem; margin: 0 0 12px; color: var(--muted); font-weight: 600; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button {
+    font: inherit; font-size: 1rem; border: 0; border-radius: 10px; padding: 12px 16px;
+    background: #334155; color: var(--text); cursor: pointer; flex: 1 1 auto; min-height: 46px;
+    touch-action: manipulation;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.15); }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary { background: var(--accent); color: #0f172a; font-weight: 700; }
+  button.danger { background: var(--err); color: #fff; }
+  .status { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); flex: none; }
+  .dot.on { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.busy { background: var(--warn); }
+  .led-indicator { width: 22px; height: 22px; border-radius: 50%; background: #475569; border: 2px solid #64748b; flex: none; }
+  .led-indicator.on { background: #facc15; border-color: #fde047; box-shadow: 0 0 14px #facc15; }
+  input[type=range] { width: 100%; accent-color: var(--accent); height: 32px; }
+  input[type=text], input[type=number] {
+    font: inherit; font-size: 1rem; padding: 12px; border-radius: 10px; border: 1px solid var(--line);
+    background: #0b1220; color: var(--text); min-height: 46px;
+  }
+  input[type=text] { flex: 1 1 200px; }
+  input[type=number] { width: 90px; }
+  label { color: var(--muted); }
+  .hint { font-size: .85rem; color: var(--muted); line-height: 1.6; margin: 8px 0 0; }
+  code { background: #0b1220; padding: 1px 5px; border-radius: 4px; font-size: .9em; }
+  .notice { border-color: var(--warn); }
+  .notice.bad { border-color: var(--err); background: #3b1d1d; }
+  .notice p { margin: 0; line-height: 1.7; font-size: .92rem; }
+  #log {
+    background: #0b1220; border-radius: 10px; padding: 10px; height: 220px; overflow-y: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .85rem; line-height: 1.5;
+    white-space: pre-wrap; word-break: break-all;
+  }
+  .l-tx { color: var(--accent); } .l-rx { color: var(--ok); } .l-err { color: var(--err); } .l-sys { color: var(--muted); }
+  .chips button { flex: 0 0 auto; padding: 8px 12px; min-height: 38px; font-size: .9rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>🔵 XIAO ESP32-C6 藍牙遙控</h1>
+
+  <section class="card notice" id="notice">
+    <p>
+      本頁使用 <b>Web Bluetooth</b>，請使用 <b>電腦版或 Android 版 Chrome / Edge</b> 開啟，
+      並透過 <b>HTTPS</b> 或 <b>localhost</b>（例如 <code>http://localhost:8000</code>）載入。<br>
+      ⚠️ iPhone / iPad 的 Safari（以及 iOS 上所有瀏覽器）不支援 Web Bluetooth；Firefox 也不支援。
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>連線</h2>
+    <div class="row" style="margin-bottom:12px">
+      <span class="dot" id="dot"></span>
+      <span class="status" id="statusText">尚未連線</span>
+    </div>
+    <div class="row">
+      <button class="primary" id="btnConnect">連線裝置</button>
+      <button class="danger" id="btnDisconnect" disabled>中斷連線</button>
+    </div>
+    <p class="hint">按下「連線裝置」後，在跳出的視窗中選擇 <b>XIAO-C6</b>。</p>
+  </section>
+
+  <section class="card">
+    <h2>板載 LED（GPIO15）</h2>
+    <div class="row">
+      <span class="led-indicator" id="ledIndicator" title="LED 狀態"></span>
+      <button class="ctl" data-cmd="LED,ON" disabled>💡 開</button>
+      <button class="ctl" data-cmd="LED,OFF" disabled>⚫ 關</button>
+      <button class="ctl" data-cmd="LED,TOGGLE" disabled>🔁 切換</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>PWM 亮度 / 輸出</h2>
+    <div class="row" style="margin-bottom:6px">
+      <label for="pwmPin">腳位</label>
+      <input type="number" id="pwmPin" value="15" min="0" max="23">
+      <label for="pwm">數值：<b id="pwmVal">0</b> / 255</label>
+    </div>
+    <input type="range" id="pwm" min="0" max="255" value="0" class="ctl" disabled>
+    <p class="hint">預設控制板載 LED（腳位 15，255 = 最亮）。可改成外接腳位，例如 D0 = GPIO0。</p>
+  </section>
+
+  <section class="card">
+    <h2>自訂指令</h2>
+    <form class="row" id="cmdForm">
+      <input type="text" id="cmdInput" placeholder="例如 PIN,2,1 或 PWM,0,128" autocomplete="off" autocapitalize="characters">
+      <button type="submit" class="primary ctl" disabled>送出</button>
+    </form>
+    <div class="row chips" style="margin-top:10px">
+      <button type="button" class="ctl" data-cmd="STATUS" disabled>STATUS</button>
+      <button type="button" class="ctl" data-cmd="HELP" disabled>HELP</button>
+    </div>
+    <p class="hint">
+      指令：<code>LED,ON|OFF|TOGGLE</code>、<code>PIN,&lt;腳位&gt;,&lt;0|1&gt;</code>、<code>PWM,&lt;腳位&gt;,&lt;0-255&gt;</code>、<code>STATUS</code>、<code>HELP</code><br>
+      可用腳位：D0=0、D1=1、D2=2、D3=21、D4=22、D5=23、D6=16、D7=17、D8=19、D9=20、D10=18、LED=15
+    </p>
+  </section>
+
+  <section class="card">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px">
+      <h2 style="margin:0">紀錄</h2>
+      <button type="button" id="btnClear" style="flex:0 0 auto;padding:6px 12px;min-height:34px">清除</button>
+    </div>
+    <div id="log"></div>
+  </section>
+</main>
+
+<script>
+// ===== 必須與韌體 xiao_c6_ble.ino 相同 =====
+const DEVICE_NAME      = 'XIAO-C6';
+const SERVICE_UUID     = '903cabbe-a880-4bb1-894b-714475b081bc';
+const CMD_CHAR_UUID    = 'c86aa8bf-03dc-4a01-acdd-f6e3f79ddcd4';
+const STATUS_CHAR_UUID = 'ca7e628e-65c3-4440-a4e8-2fcfd2228ac3';
+
+const $ = (id) => document.getElementById(id);
+const encoder = new TextEncoder();
+const decoder = new TextDecoder('utf-8');
+
+let device = null;
+let cmdChar = null;
+let statusChar = null;
+let writeQueue = Promise.resolve();   // 確保一次只寫一筆（GATT 同時操作會出錯）
+let userDisconnect = false;
+
+// ===== 紀錄 =====
+function log(msg, type = 'sys') {
+  const el = $('log');
+  const line = document.createElement('div');
+  line.className = 'l-' + type;
+  const t = new Date().toLocaleTimeString('zh-TW', { hour12: false });
+  const prefix = { tx: '→ ', rx: '← ', err: '✖ ', sys: '• ' }[type] || '';
+  line.textContent = `[${t}] ${prefix}${msg}`;
+  el.appendChild(line);
+  while (el.childNodes.length > 300) el.removeChild(el.firstChild);
+  el.scrollTop = el.scrollHeight;
+}
+
+// ===== UI 狀態 =====
+function setState(state, text) {
+  const dot = $('dot');
+  dot.className = 'dot' + (state === 'connected' ? ' on' : state === 'busy' ? ' busy' : '');
+  $('statusText').textContent = text;
+  const connected = state === 'connected';
+  $('btnConnect').disabled = state !== 'idle';
+  $('btnDisconnect').disabled = !connected;
+  document.querySelectorAll('.ctl').forEach((b) => (b.disabled = !connected));
+}
+
+function setLedIndicator(on) {
+  $('ledIndicator').classList.toggle('on', !!on);
+}
+
+// ===== 支援檢查 =====
+function checkSupport() {
+  const notice = $('notice');
+  if (!window.isSecureContext) {
+    notice.classList.add('bad');
+    log('目前不是安全來源（HTTPS / localhost），瀏覽器會停用 Web Bluetooth。', 'err');
+    return false;
+  }
+  if (!navigator.bluetooth) {
+    notice.classList.add('bad');
+    log('此瀏覽器不支援 Web Bluetooth，請改用電腦版或 Android 版 Chrome / Edge。', 'err');
+    return false;
+  }
+  return true;
+}
+
+// ===== 連線 =====
+async function connect() {
+  if (!checkSupport()) return;
+  try {
+    setState('busy', '選擇裝置中…');
+    userDisconnect = false;
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [SERVICE_UUID] }, { name: DEVICE_NAME }],
+      optionalServices: [SERVICE_UUID],
+    });
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+    await connectGatt();
+  } catch (e) {
+    if (e.name === 'NotFoundError') log('已取消選擇裝置', 'sys');
+    else log('連線失敗：' + e.message, 'err');
+    setState('idle', '尚未連線');
+  }
+}
+
+async function connectGatt() {
+  setState('busy', `連線到 ${device.name || '裝置'}…`);
+  log(`連線到 ${device.name || device.id}…`);
+  const server = await device.gatt.connect();
+  const service = await server.getPrimaryService(SERVICE_UUID);
+  cmdChar = await service.getCharacteristic(CMD_CHAR_UUID);
+  statusChar = await service.getCharacteristic(STATUS_CHAR_UUID);
+  statusChar.addEventListener('characteristicvaluechanged', onNotify);
+  await statusChar.startNotifications();
+  setState('connected', `已連線：${device.name || '裝置'}`);
+  log('連線成功，已訂閱狀態通知');
+  try {
+    const v = await statusChar.readValue();
+    handleReply(decoder.decode(v));
+  } catch (_) { /* 讀取失敗不影響使用 */ }
+}
+
+function disconnect() {
+  userDisconnect = true;
+  if (device && device.gatt.connected) device.gatt.disconnect();
+}
+
+async function onDisconnected() {
+  cmdChar = statusChar = null;
+  setLedIndicator(false);
+  if (userDisconnect) {
+    log('已中斷連線');
+    setState('idle', '尚未連線');
+    return;
+  }
+  // 非使用者主動斷線：自動重試幾次
+  log('連線中斷，嘗試重新連線…', 'err');
+  for (let i = 1; i <= 3; i++) {
+    try {
+      await new Promise((r) => setTimeout(r, 1000 * i));
+      if (userDisconnect) break;
+      await connectGatt();
+      return;
+    } catch (e) {
+      log(`重新連線失敗（第 ${i} 次）：${e.message}`, 'err');
+    }
+  }
+  setState('idle', '已斷線，請重新連線');
+}
+
+// ===== 收發 =====
+function onNotify(event) {
+  handleReply(decoder.decode(event.target.value));
+}
+
+function handleReply(text) {
+  log(text, text.startsWith('ERR') ? 'err' : 'rx');
+  const m = text.match(/LED=(\d)/);
+  if (m) setLedIndicator(m[1] === '1');
+  const p = text.match(/^OK PWM 15=(\d+)/);
+  if (p) setLedIndicator(Number(p[1]) > 0);
+}
+
+function send(cmd) {
+  cmd = String(cmd).trim();
+  if (!cmd) return Promise.resolve();
+  if (!cmdChar) { log('尚未連線', 'err'); return Promise.resolve(); }
+  writeQueue = writeQueue.then(async () => {
+    try {
+      log(cmd, 'tx');
+      const data = encoder.encode(cmd);
+      if (cmdChar.writeValueWithResponse) await cmdChar.writeValueWithResponse(data);
+      else await cmdChar.writeValue(data);
+    } catch (e) {
+      log('傳送失敗：' + e.message, 'err');
+    }
+  });
+  return writeQueue;
+}
+
+// ===== PWM 滑桿（節流，避免拖曳時塞爆藍牙） =====
+let pwmTimer = null, pwmPending = null, pwmBusy = false;
+function schedulePwm() {
+  pwmPending = `PWM,${$('pwmPin').value},${$('pwm').value}`;
+  if (pwmTimer) return;
+  pwmTimer = setTimeout(async function flush() {
+    pwmTimer = null;
+    if (pwmBusy || !pwmPending) return;
+    const cmd = pwmPending; pwmPending = null; pwmBusy = true;
+    await send(cmd);
+    pwmBusy = false;
+    if (pwmPending) pwmTimer = setTimeout(flush, 60);
+  }, 60);
+}
+
+// ===== 事件綁定 =====
+$('btnConnect').addEventListener('click', connect);
+$('btnDisconnect').addEventListener('click', disconnect);
+$('btnClear').addEventListener('click', () => ($('log').innerHTML = ''));
+document.querySelectorAll('button[data-cmd]').forEach((b) =>
+  b.addEventListener('click', () => send(b.dataset.cmd)));
+$('pwm').addEventListener('input', () => { $('pwmVal').textContent = $('pwm').value; schedulePwm(); });
+$('cmdForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const v = $('cmdInput').value;
+  if (v.trim()) { send(v); $('cmdInput').value = ''; }
+});
+
+setState('idle', '尚未連線');
+if (checkSupport()) log('瀏覽器支援 Web Bluetooth，按「連線裝置」開始');
+</script>
+</body>
+</html>
