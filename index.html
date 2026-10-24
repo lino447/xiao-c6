@@ -193,9 +193,24 @@
   .tabbar button.a { color:var(--red); }
   .tabbar .ico i { position:absolute; top:-1px; right:-4px; width:8px; height:8px; border-radius:4px; background:var(--ok); border:1.5px solid #0b0b0c; display:none; }
   .tabbar .ico i.on { display:block; }
+
+  /* ===== 模擬模式 ===== */
+  .chiprow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; }
+  .chiprow .chip { margin-top:0; min-width:0; }
+  .simbadge { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:9px; background:#e0a526; color:#000; font-size:11px; font-weight:700; letter-spacing:.5px; }
+  .simtog { display:inline-flex; align-items:center; gap:8px; padding:5px 6px 5px 11px; border-radius:16px; background:var(--card2); font-size:12px; color:var(--t1); flex:none; }
+  .simtog.on { background:#3a2e0f; color:#ffd36b; outline:1px solid #e0a526; }
+  .simtog .switch { width:36px; height:22px; border-radius:11px; }
+  .simtog .switch:after { width:16px; height:16px; top:3px; left:3px; }
+  .simtog .switch.on { background:#e0a526; }
+  .simtog .switch.on:after { transform:translateX(14px); }
+  .simbar { position:sticky; top:0; z-index:60; background:#e0a526; color:#000; font-size:12.5px; font-weight:600; text-align:center; padding:6px 10px; }
+  .simtools { margin-top:10px; padding:10px 12px; border-radius:12px; background:#2a2310; color:#e8c76a; font-size:12px; line-height:1.6; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .simtools .cb { background:#3a2e0f; color:#ffd36b; border-radius:10px; padding:6px 10px; font-size:12px; }
 </style>
 </head>
 <body>
+<div class="simbar" id="simBar" hidden>🧪 模擬中 · 這不是真的車，也不會送出任何藍牙指令</div>
 <div class="app">
 
   <!-- ===================== 車輛 ===================== -->
@@ -203,9 +218,13 @@
     <div class="pad">
       <div class="upd" id="updText">最後更新：—</div>
       <h1>我的車</h1>
+      <div class="chiprow">
       <div class="chip">
         <span class="bt"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><b id="chipDot"></b></span>
         <span id="chipText">XIAO-C6 尚未連線</span>
+        <span class="simbadge" id="simBadge" hidden>模擬中</span>
+      </div>
+      <button class="simtog" id="simToggle" type="button" role="switch" aria-checked="false" aria-label="模擬模式">模擬模式<span class="switch" id="simSw"></span></button>
       </div>
     </div>
 
@@ -247,6 +266,10 @@
           <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke-width="1.4" stroke-linejoin="round"><path d="M2 17h22l-1-4-4-1-3-4H9L6 12H3z"/><path d="M6 12L3.5 6.5" stroke-width="1.6"/><circle class="hole" cx="7" cy="17.5" r="2"/><circle class="hole" cx="19" cy="17.5" r="2"/></svg>開前箱</button>
         <button class="tile ctl" id="tTrunk" data-cmd="TRUNK" disabled>
           <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke-width="1.4" stroke-linejoin="round"><path d="M24 17H2l1-4 4-1 3-4h7l3 4h3z"/><path d="M20 12l2.5-5.5" stroke-width="1.6"/><circle class="hole" cx="19" cy="17.5" r="2"/><circle class="hole" cx="7" cy="17.5" r="2"/></svg>開後箱</button>
+      </div>
+      <div class="simtools" id="simTools" hidden>
+        <span>模擬中：蓋子 30 秒後自動關閉（同韌體）</span>
+        <span><button class="cb" type="button" data-cmd="CLOSE_FRUNK">關前箱</button> <button class="cb" type="button" data-cmd="CLOSE_TRUNK">關後箱</button></span>
       </div>
     </div>
   </section>
@@ -399,6 +422,14 @@
         </div>
       </details>
 
+      <div class="sec">模擬模式（不需板子）</div>
+      <div class="list">
+        <button class="li" id="simRow" type="button">
+          <span class="k">模擬 XIAO-C6<small>假裝已連上板子，到「車輛」分頁按解鎖／上鎖／開前箱／開後箱測試。完全不會送出藍牙指令。網址加 <code>?sim=1</code> 可直接進入模擬模式。</small></span>
+          <span class="switch" id="simRowSw"></span>
+        </button>
+      </div>
+
       <div class="sec">3D 動畫預覽（不需板子）</div>
       <div class="list">
         <button class="li" id="demoFrunk" type="button">
@@ -449,6 +480,8 @@ let statusChar = null;
 let writeQueue = Promise.resolve();   // 確保一次只寫一筆（GATT 同時操作會出錯）
 let userDisconnect = false;
 let connState = 'idle';
+let simMode = false;                  // 模擬模式：不碰藍牙，由 simSend() 模擬板子回覆
+const SIM_NAME = 'XIAO-C6 (模擬)';
 
 // 板子 / 車輛狀態（全部由板子回覆解析，不自行假設）
 const dev = { led: null, pwm: null, uptime: null, uptimeAt: 0, lastReply: 0,
@@ -502,21 +535,23 @@ function setState(state, text) {
   connState = state;
   const connected = state === 'connected';
   const busy = state === 'busy';
-  const name = (device && device.name) || DEVICE_NAME;
+  const name = simMode ? SIM_NAME : (device && device.name) || DEVICE_NAME;
   const cls = connected ? 'on' : busy ? 'busy' : '';
   $('chipDot').className = cls;
   $('tabDot').className = connected ? 'on' : '';
-  $('chipText').textContent = connected ? `${name} 已連線` : busy ? text : `${DEVICE_NAME} 尚未連線`;
-  $('accConn').textContent = connected ? '已連線' : busy ? '連線中' : '未連線';
+  $('chipText').textContent = connected ? `${name} ${simMode ? '模擬中' : '已連線'}` : busy ? text : `${DEVICE_NAME} 尚未連線`;
+  $('accConn').textContent = connected ? (simMode ? '模擬中' : '已連線') : busy ? '連線中' : '未連線';
   $('scanText').textContent = text;
   $('track').className = 'track' + (busy ? ' run' : connected ? ' done' : '');
 
-  $('btnConnect').disabled = state !== 'idle';
-  $('btnConnectText').textContent = busy ? '連線中…' : connected ? '已連線' : '搜尋並連線';
+  $('btnConnect').disabled = state !== 'idle' && !simMode;   // 模擬中仍可按，會先關閉模擬再真的連線
+  $('btnConnectText').textContent = busy ? '連線中…' : connected && !simMode ? '已連線' : '搜尋並連線';
   $('devCard').hidden = !connected;
   $('devName').textContent = name;
   $('devTitle').textContent = connected ? '我的裝置' : '新增裝置';
   $('btnDisconnect').disabled = !connected;
+  $('devCard').querySelector('em').textContent = simMode ? '模擬中' : '已連線';
+  $('btnDisconnect').textContent = simMode ? '結束模擬' : '中斷';
 
   // 未連線時主按鈕變成白色「搜尋並連線」，連線後恢復設計稿的「車輛詳情」
   const main = $('btnMain');
@@ -557,8 +592,8 @@ function renderSignal() {
     $('sigVal').textContent = r; $('sigUnit').textContent = 'dBm';
     prog.firstElementChild.style.width = Math.max(5, Math.min(100, (r + 100) * 2)) + '%';
   } else {
-    $('sigBig').textContent = connected ? '已連線' : connState === 'busy' ? '連線中' : '未連線';
-    $('sigVal').textContent = (device && device.name) || DEVICE_NAME; $('sigUnit').textContent = 'BLE';
+    $('sigBig').textContent = connected ? (simMode ? '模擬中' : '已連線') : connState === 'busy' ? '連線中' : '未連線';
+    $('sigVal').textContent = simMode ? SIM_NAME : (device && device.name) || DEVICE_NAME; $('sigUnit').textContent = 'BLE';
     prog.firstElementChild.style.width = connected ? '100%' : '';
   }
 }
@@ -747,7 +782,7 @@ function stopWatching() {
   watching = null;
 }
 async function initAutoConnect() {
-  if (!autoConnect || !autoSupported() || connState !== 'idle') return;
+  if (!autoConnect || !autoSupported() || connState !== 'idle' || simMode) return;
   try {
     const list = await navigator.bluetooth.getDevices();
     const d = list.find((x) => x.name === DEVICE_NAME) || list[0];
@@ -757,6 +792,7 @@ async function initAutoConnect() {
 
 // ===== 連線 =====
 async function connect() {
+  if (simMode) simOff('改用真實藍牙連線');
   if (!checkSupport()) { showView('device'); return; }
   try {
     setState('busy', '選擇裝置中…');
@@ -795,6 +831,7 @@ async function connectGatt() {
 }
 
 function disconnect() {
+  if (simMode) { simOff(); return; }
   userDisconnect = true;
   stopWatching();
   if (device && device.gatt.connected) device.gatt.disconnect();
@@ -857,6 +894,7 @@ function handleReply(text) {
 function send(cmd) {
   cmd = String(cmd).trim();
   if (!cmd) return Promise.resolve();
+  if (simMode) return simSend(cmd);   // 模擬中：絕不碰 cmdChar / 藍牙
   if (!cmdChar) { log('尚未連線', 'err'); return Promise.resolve(); }
   writeQueue = writeQueue.then(async () => {
     try {
@@ -891,6 +929,99 @@ function paintSlider() {
   r.style.setProperty('--p', (r.value / 255 * 100) + '%');
 }
 
+// ===== 模擬模式 =====
+// 模擬一塊「XIAO-C6 (模擬)」：指令一樣走 send() → 模擬韌體 → handleReply()，
+// 所以狀態文字、紀錄、3D 蓋子動畫與固定視角都和真實藍牙回覆走同一條路徑。
+// 模擬行為對照韌體：脈衝 500 ms（期間再按會回 ERR 忙碌中）、前後箱 30 秒自動關閉、
+// 剛上電車門狀態為未知（LOCK=?）。
+const SIM_PULSE_MS = 500, SIM_LID_AUTO_CLOSE_MS = 30000, SIM_LATENCY_MS = 80;
+const sim = { lock: '?', frunk: false, trunk: false, led: false, pwm: null, pulseUntil: 0, frunkAt: 0, trunkAt: 0, t0: 0, tick: 0, timers: [] };
+function simStatusText() {
+  const up = Math.floor((Date.now() - sim.t0) / 1000);
+  return `STATUS LED=${sim.led ? 1 : 0} UPTIME=${up}s LOCK=${sim.lock === '?' ? '?' : sim.lock ? 1 : 0} FRUNK=${sim.frunk ? 1 : 0} TRUNK=${sim.trunk ? 1 : 0}`;
+}
+function simReply(text, delay = SIM_LATENCY_MS) {
+  const id = setTimeout(() => { sim.timers = sim.timers.filter((x) => x !== id); if (simMode) handleReply(text); }, delay);
+  sim.timers.push(id);
+}
+function simSend(cmd) {
+  log(cmd, 'tx');
+  const parts = cmd.split(',').map((x) => x.trim());
+  const op = parts[0].toUpperCase();
+  const now = Date.now();
+  if (['LOCK', 'UNLOCK', 'FRUNK', 'TRUNK'].includes(op)) {
+    if (now < sim.pulseUntil) { simReply('ERR 忙碌中，請稍後再試'); return Promise.resolve(); }
+    sim.pulseUntil = now + SIM_PULSE_MS;
+    if (op === 'UNLOCK') { sim.lock = false; simReply('OK LOCK=0'); }
+    else if (op === 'LOCK') { sim.lock = true; simReply('OK LOCK=1'); }
+    else if (op === 'FRUNK') { sim.frunk = true; sim.frunkAt = now; simReply('OK FRUNK=1'); }
+    else { sim.trunk = true; sim.trunkAt = now; simReply('OK TRUNK=1'); }
+  } else if (op === 'CLOSE_FRUNK') { sim.frunk = false; simReply('OK FRUNK=0'); }
+  else if (op === 'CLOSE_TRUNK') { sim.trunk = false; simReply('OK TRUNK=0'); }
+  else if (op === 'STATUS') simReply(simStatusText());
+  else if (op === 'LED') {
+    const a = (parts[1] || '').toUpperCase();
+    if (a === 'ON') sim.led = true; else if (a === 'OFF') sim.led = false; else if (a === 'TOGGLE') sim.led = !sim.led;
+    else { simReply('ERR 用法: LED,ON|OFF|TOGGLE'); return Promise.resolve(); }
+    simReply('OK LED=' + (sim.led ? 1 : 0));
+  } else if (op === 'PWM') {
+    const d = Number(parts[2]);
+    if (Number(parts[1]) === 15 && d >= 0 && d <= 255) { sim.led = d > 0; simReply(`OK PWM 15=${d}`); }
+    else simReply(`OK PWM ${parts[1]}=${parts[2]}（模擬）`);
+  } else if (op === 'PIN') {
+    if (Number(parts[1]) === 15) sim.led = parts[2] === '0';   // 板載 LED 低電位點亮
+    simReply(`OK PIN ${parts[1]}=${parts[2]}（模擬）`);
+  } else if (op === 'HELP') simReply('指令: LED,ON|OFF|TOGGLE / PIN,n,0|1 / PWM,n,0-255 / LOCK / UNLOCK / FRUNK / TRUNK / CLOSE_FRUNK / CLOSE_TRUNK / STATUS');
+  else simReply('ERR 未知指令: ' + op);
+  return Promise.resolve();
+}
+function simTick() {
+  const now = Date.now();
+  let changed = false;
+  if (sim.frunk && now - sim.frunkAt >= SIM_LID_AUTO_CLOSE_MS) { sim.frunk = false; changed = true; }
+  if (sim.trunk && now - sim.trunkAt >= SIM_LID_AUTO_CLOSE_MS) { sim.trunk = false; changed = true; }
+  if (changed) { log('（模擬）前／後箱 30 秒自動關閉', 'sys'); handleReply(simStatusText()); }   // 韌體自動關閉時會主動送 STATUS
+}
+function renderSim() {
+  $('simBar').hidden = !simMode;
+  $('simBadge').hidden = !simMode;
+  $('simTools').hidden = !simMode;
+  $('simToggle').classList.toggle('on', simMode);
+  $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
+  $('simSw').classList.toggle('on', simMode);
+  $('simRowSw').classList.toggle('on', simMode);
+}
+function simOn() {
+  if (simMode) return;
+  if (connState !== 'idle' || cmdChar) {   // 真實藍牙已連線／連線中：不能同時模擬，避免混淆
+    log('請先中斷真實藍牙連線，再開啟模擬模式', 'err');
+    return;
+  }
+  stopWatching();
+  Object.assign(sim, { lock: '?', frunk: false, trunk: false, led: false, pwm: null, pulseUntil: 0, t0: Date.now() });
+  simMode = true;
+  renderSim();
+  log('🧪 模擬模式開啟：不會送出任何藍牙指令', 'sys');
+  setState('connected', `已連線：${SIM_NAME}`);
+  log(`（模擬）連線成功：${SIM_NAME}`);
+  simReply(simStatusText(), 150);   // 板子剛連線會主動送 STATUS（剛上電 LOCK=?）
+  sim.tick = setInterval(simTick, 1000);
+}
+function simOff(why) {
+  if (!simMode) return;
+  clearInterval(sim.tick); sim.tick = 0;
+  sim.timers.forEach(clearTimeout); sim.timers = [];
+  simMode = false;
+  renderSim();
+  log('🧪 模擬模式關閉' + (why ? `（${why}）` : ''), 'sys');
+  setState('idle', '尚未連線');   // 重設車門／前後箱狀態；3D 蓋子會回到關閉
+  document.querySelectorAll('.tile.pending').forEach((t) => t.classList.remove('pending'));
+  if (autoConnect) initAutoConnect();
+}
+const simToggleClick = () => (simMode ? simOff() : simOn());
+$('simToggle').addEventListener('click', simToggleClick);
+$('simRow').addEventListener('click', simToggleClick);
+
 // ===== 事件綁定 =====
 $('btnConnect').addEventListener('click', connect);
 $('btnMain').addEventListener('click', () => (connState === 'connected' ? showView('account', 'details') : connect()));
@@ -923,6 +1054,8 @@ paintSlider();
 setState('idle', '尚未連線');
 renderAuto();
 showView(location.hash.slice(1) || 'car');
+renderSim();
+if (new URLSearchParams(location.search).get('sim') === '1') simOn();   // ?sim=1：直接進入模擬模式
 if (checkSupport()) { log('瀏覽器支援 Web Bluetooth，按「搜尋並連線」開始'); initAutoConnect(); }
 </script>
 </body>
