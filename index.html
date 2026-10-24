@@ -772,7 +772,7 @@ function setLid(k, open) {
   lidKick();
 }
 // ===== 自訂車牌 =====
-// 車牌是模型裡兩塊小平面（PlateFront 在前保桿、PlateRear 在後保桿，各自材質 LicensePlate / LicensePlateRear；前保桿另有黑色底座 PlateFrontBracket），
+// 車牌是模型裡兩塊小平面（PlateFront 在前保桿、PlateRear 在後保桿，各自材質 LicensePlate / LicensePlateRear；前保桿另有黑色底座 PlateFrontBracket、後保桿牌後有 PlateRearBracket，兩塊共用 PlateBracket 材質，隨車牌顯示／隱藏），
 // 貼圖不是事先做好的：網頁用 canvas 即時畫出號碼，再用 model-viewer 的 createCanvasTexture() +
 // material.pbrMetallicRoughness.baseColorTexture.setTexture() 貼上去（走 WebGL，iOS Safari / Bluefy 也一樣）。
 const PLATE_STYLES = {
@@ -922,7 +922,7 @@ function paintPlateTexture() {
     t.tex.source.update();                                       // 告訴 model-viewer：canvas 內容變了，重畫
     if (t.nTex) { drawPlateNormal(t.nCv, plateText, k); t.nTex.source.update(); }
     if (t.edgeMat) t.edgeMat.pbrMetallicRoughness.setBaseColorFactor([0.30, 0.31, 0.33, plateText ? 1 : 0]);   // 沒車牌時連牌身厚度也隱藏
-    if (t.bracketMat) t.bracketMat.pbrMetallicRoughness.setBaseColorFactor([0.025, 0.025, 0.027, plateText ? 1 : 0]);   // 前牌黑色底座跟著車牌：沒車牌就隱藏
+    if (t.bracketMat) t.bracketMat.pbrMetallicRoughness.setBaseColorFactor([0.025, 0.025, 0.027, plateText ? 1 : 0]);   // 黑色底座（前 PlateFrontBracket + 後 PlateRearBracket 共用此材質）跟著車牌：沒車牌就隱藏
   });
 }
 function renderPlateUI() {
