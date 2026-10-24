@@ -922,6 +922,7 @@ function paintPlateTexture() {
     t.tex.source.update();                                       // 告訴 model-viewer：canvas 內容變了，重畫
     if (t.nTex) { drawPlateNormal(t.nCv, plateText, k); t.nTex.source.update(); }
     if (t.edgeMat) t.edgeMat.pbrMetallicRoughness.setBaseColorFactor([0.30, 0.31, 0.33, plateText ? 1 : 0]);   // 沒車牌時連牌身厚度也隱藏
+    if (t.bracketMat) t.bracketMat.pbrMetallicRoughness.setBaseColorFactor([0.025, 0.025, 0.027, plateText ? 1 : 0]);   // 前牌黑色底座跟著車牌：沒車牌就隱藏
   });
 }
 function renderPlateUI() {
@@ -948,7 +949,11 @@ function initPlateTexture() {
     const cv = tex.source.element;
     cv.width = 1024; cv.height = 512;
     mat.pbrMetallicRoughness.baseColorTexture.setTexture(tex);
-    plateTexs[k] = { tex, cv, edgeMat: mats.find((m) => m.name === edge) || null };
+    plateTexs[k] = { tex, cv, edgeMat: mats.find((m) => m.name === edge) || null, bracketMat: null };
+    if (k === 'f') {   // 黑色底座（材質 PlateBracket）：改成 MASK 後用 alpha 0/1 開關，和牌身厚度（edge）同一套做法
+      const bm = mats.find((m) => m.name === 'PlateBracket');
+      if (bm) { try { bm.setAlphaMode('MASK'); bm.setAlphaCutoff(0.5); } catch (e) { /* 舊版 model-viewer 沒這個 API 就維持常顯 */ } plateTexs[k].bracketMat = bm; }
+    }
     try {   // 法線貼圖：讓光線跟著浮凸的邊框和字起反應；失敗就只用烤進顏色的陰影
       const nTex = carMv.createCanvasTexture(), nCv = nTex.source.element;
       nCv.width = 1024; nCv.height = 512;
