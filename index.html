@@ -207,6 +207,22 @@
   .simbar { position:sticky; top:0; z-index:60; background:#e0a526; color:#000; font-size:12.5px; font-weight:600; text-align:center; padding:6px 10px; }
   .simtools { margin-top:10px; padding:10px 12px; border-radius:12px; background:#2a2310; color:#e8c76a; font-size:12px; line-height:1.6; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
   .simtools .cb { background:#3a2e0f; color:#ffd36b; border-radius:10px; padding:6px 10px; font-size:12px; }
+
+  /* ===== 自訂車牌 ===== */
+  .platechip { position:absolute; right:10px; bottom:8px; z-index:3; display:flex; align-items:center; gap:2px; }
+  .platechip button { display:flex; align-items:center; gap:7px; height:30px; padding:0 10px; border-radius:15px; background:rgba(38,39,43,.88); font-size:12px; color:var(--t1); -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); }
+  .platechip [hidden] { display:none; }
+  .platechip button.edit { color:var(--t2); gap:5px; padding:0 9px; }
+  .platechip canvas { width:46px; height:21.5px; display:block; border-radius:3px; }
+  .platechip button.on { background:var(--t1); color:#000; }
+  .platechip button.on canvas { outline:1px solid rgba(0,0,0,.25); }
+  .platepv { display:block; width:100%; max-width:320px; aspect-ratio:32/15; margin:2px auto 0; border-radius:8px; }
+  .platerow { display:flex; align-items:center; gap:10px; }
+  .platerow label { color:var(--t2); font-size:13px; white-space:nowrap; }
+  .platerow input[type=text] { flex:1; min-width:0; text-transform:uppercase; letter-spacing:2px; font-weight:600; }
+  .seg { display:flex; background:var(--card2); border-radius:8px; padding:2px; gap:2px; }
+  .seg button { flex:1; height:34px; border-radius:6px; font-size:13px; text-align:center; padding:0; color:var(--t2); }
+  .seg button.a { background:var(--t1); color:#000; font-weight:600; }
 </style>
 </head>
 <body>
@@ -229,7 +245,11 @@
     </div>
 
     <div class="carousel" id="carousel">
-      <div class="slide"><div class="word">BOXSTER GTS</div><div class="horizon"></div><model-viewer class="car" id="carModel" src="car_anim.glb" ios-src="car.usdz" poster="car_poster.png" alt="Porsche Boxster 3D 模型" camera-controls disable-zoom disable-pan auto-rotate auto-rotate-delay="4000" rotation-per-second="12deg" interaction-prompt="none" camera-orbit="40deg 80deg 6.8m" min-camera-orbit="auto 60deg 6.8m" max-camera-orbit="auto 88deg 6.8m" camera-target="0m 0.35m 0m" field-of-view="28deg" shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral" ar ar-modes="quick-look webxr scene-viewer" touch-action="pan-y"></model-viewer></div>
+      <div class="slide"><div class="word">BOXSTER GTS</div><div class="horizon"></div><model-viewer class="car" id="carModel" src="car_anim.glb" ios-src="car.usdz" poster="car_poster.png" alt="Porsche Boxster 3D 模型" camera-controls disable-zoom disable-pan auto-rotate auto-rotate-delay="4000" rotation-per-second="12deg" interaction-prompt="none" camera-orbit="40deg 80deg 6.8m" min-camera-orbit="auto 60deg 6.8m" max-camera-orbit="auto 88deg 6.8m" camera-target="0m 0.35m 0m" field-of-view="28deg" shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral" ar ar-modes="quick-look webxr scene-viewer" touch-action="pan-y"></model-viewer>
+        <div class="platechip" id="plateChipBox">
+          <button type="button" id="plateChip" aria-label="車牌特寫"><canvas id="plateChipCv" width="184" height="86"></canvas><span id="plateChipTx">車牌</span></button>
+          <button type="button" class="edit" id="plateEdit" aria-label="編輯車牌"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span id="plateEditTx" hidden>設定車牌</span></button>
+        </div></div>
       <div class="slide"><div class="word">XIAO ESP32-C6</div><div class="boardpic" role="img" aria-label="車上的藍牙控制模組示意圖"></div></div>
       <div class="slide"><div class="word">WIRING</div>
         <div class="wiring" id="wiring">
@@ -357,6 +377,14 @@
         <div class="li"><span class="k">藍牙模組</span><span class="v">Seeed XIAO ESP32-C6 · <span id="accConn">未連線</span></span></div>
         <div class="li"><span class="k">裝置名稱</span><span class="v"><code>XIAO-C6</code></span></div>
         <div class="li"><span class="k">運行時間</span><span class="v" id="upVal">—</span></div>
+      </div>
+
+      <div class="sec" id="plateSec">車牌</div>
+      <div class="list">
+        <div class="li" style="display:block;padding:14px 16px 6px"><canvas class="platepv" id="platePv" width="640" height="300" role="img" aria-label="車牌預覽"></canvas></div>
+        <div class="li platerow"><label for="plateInput">車牌號碼</label><input type="text" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
+        <div class="li"><span class="k">車牌樣式</span><span class="seg" id="plateStyle" style="width:150px"><button type="button" data-style="white" class="a">白牌</button><button type="button" data-style="yellow">黃牌</button></span></div>
+        <div class="li"><span class="k"><small>最多 8 個字元，可用英文字母、數字和連字號（-）。輸入後馬上畫在 3D 車的前、後車牌上，並存在這支手機。留空就不顯示車牌。車牌只是畫面效果，不影響藍牙控制。在「車輛」分頁按車牌小標籤可看特寫。</small></span></div>
       </div>
 
       <div class="sec">接線（繼電器腳位）</div>
@@ -660,11 +688,14 @@ function camOff(v) {   // 目前實際鏡頭和目標視角差多少（度）
   const o = carMv.getCameraOrbit(), g = carMv.getCameraTarget();
   const m = /^(-?[\d.]+)deg (-?[\d.]+)deg (-?[\d.]+)m$/.exec(v.orbit);
   if (!m) return 0;
+  const tg = v.target.split(' ').map((x) => parseFloat(x));   // 目標點（HOME 為 0 0.35 0；車牌特寫會不同）
   const dth = Math.abs(((o.theta * 180 / Math.PI - +m[1]) % 360 + 540) % 360 - 180);
-  return Math.max(dth, Math.abs(o.phi * 180 / Math.PI - +m[2]), Math.abs(o.radius - +m[3]) * 10, Math.abs(g.y - 0.35) * 10, Math.abs(g.x) * 10, Math.abs(g.z) * 10);
+  return Math.max(dth, Math.abs(o.phi * 180 / Math.PI - +m[2]), Math.abs(o.radius - +m[3]) * 10, Math.abs(g.y - tg[1]) * 10, Math.abs(g.x - tg[0]) * 10, Math.abs(g.z - tg[2]) * 10);
 }
 function camGo(v) {
   carMv.autoRotate = false;            // 先關自動旋轉，再設鏡頭
+  // 預設視角不能縮放（半徑固定 6.8 m）；車牌特寫需要靠近，暫時放寬最小半徑，離開特寫就還原
+  carMv.minCameraOrbit = parseFloat(v.orbit.split(' ')[2]) < 6 ? 'auto 60deg 1.2m' : 'auto 60deg 6.8m';
   yawHome(true);                       // 模型自轉角度順順地歸零
   const same = carMv.cameraOrbit === v.orbit && camOff(v) > 0.5;
   if (same) carMv.cameraOrbit = v.orbit.replace(/^(-?[\d.]+)deg/, (_, a) => (+a + 0.01) + 'deg');   // 屬性值沒變時 model-viewer 不會更新，先錯開一點
@@ -725,6 +756,7 @@ function setLid(k, open) {
   const L = LIDS[k], t = open ? 1 : 0;
   if (L.tgt === t) return;
   L.tgt = t;
+  plateView = 0; renderPlateChip();     // 開關蓋子時鏡頭由蓋子接管，結束車牌特寫
   const i = lidOrder.indexOf(k);
   if (i >= 0) lidOrder.splice(i, 1);
   if (open) lidOrder.push(k);
@@ -739,6 +771,121 @@ function setLid(k, open) {
   }
   lidKick();
 }
+// ===== 自訂車牌 =====
+// 車牌是模型裡兩塊小平面（PlateFront 在前保桿、PlateRear 在後保桿，共用材質 LicensePlate），
+// 貼圖不是事先做好的：網頁用 canvas 即時畫出號碼，再用 model-viewer 的 createCanvasTexture() +
+// material.pbrMetallicRoughness.baseColorTexture.setTexture() 貼上去（走 WebGL，iOS Safari / Bluefy 也一樣）。
+const PLATE_STYLES = {
+  white:  { bg: '#f6f6f1', fg: '#15161a', edge: '#15161a' },
+  yellow: { bg: '#f3c32b', fg: '#15161a', edge: '#15161a' },
+};
+const PLATE_PLACEHOLDER = 'ABC-1234';
+const plateClean = (t) => String(t || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 8);
+let plateText = plateClean(localStorage.getItem('plateText'));
+let plateStyle = PLATE_STYLES[localStorage.getItem('plateStyle')] ? localStorage.getItem('plateStyle') : 'white';
+let plateTex = null, plateTexCv = null;
+// 在 canvas 上畫車牌。邏輯尺寸固定 1024 x 480（32:15）；貼圖 canvas 是 1024 x 512（2 的次方），所以縱向拉伸 512/480，
+// 貼回 32:15 的平面時剛好還原，字不會變形。ghost=true 時畫淡淡的示意字（沒輸入時的預覽用）
+function drawPlate(cv, text, styleKey, ghost) {
+  const ctx = cv.getContext('2d'), st = PLATE_STYLES[styleKey] || PLATE_STYLES.white;
+  ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
+  if (!text && !ghost) return;                                  // 沒車牌：整張透明（alphaMode MASK 會整塊不顯示）
+  ctx.setTransform(cv.width / 1024, 0, 0, cv.height / 480, 0, 0);
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); };
+  rr(0, 0, 1024, 480, 46); ctx.fillStyle = st.bg; ctx.fill();
+  const g = ctx.createLinearGradient(0, 0, 0, 480); g.addColorStop(0, 'rgba(255,255,255,.35)'); g.addColorStop(.5, 'rgba(255,255,255,0)'); g.addColorStop(1, 'rgba(0,0,0,.10)');
+  ctx.fillStyle = g; ctx.fill();
+  rr(22, 22, 980, 436, 30); ctx.lineWidth = 12; ctx.strokeStyle = st.edge; ctx.stroke();       // 黑色粗邊框
+  const t = (text || PLATE_PLACEHOLDER).split(''), ghostA = !text;
+  ctx.globalAlpha = ghostA ? 0.22 : 1; ctx.fillStyle = st.fg; ctx.textBaseline = 'alphabetic'; ctx.textAlign = 'left';
+  // 逐字畫（Safari 舊版沒有 letterSpacing），字寬固定、字距固定，超出就整體縮小
+  const FONT = '"Arial Narrow","Helvetica Neue Condensed Bold","Roboto Condensed",Arial,Helvetica,sans-serif';
+  let size = 300, gap = 22, adv;
+  const fitW = 860, hyph = (c) => (c === '-' ? 0.55 : 1);
+  for (let i = 0; i < 12; i++) {
+    ctx.font = `bold ${size}px ${FONT}`;
+    const cw = ctx.measureText('0').width;
+    adv = t.map((c) => cw * hyph(c) + gap);
+    const total = adv.reduce((a, b) => a + b, 0) - gap;
+    if (total <= fitW) break;
+    size *= 0.92; gap *= 0.92;
+  }
+  const total = adv.reduce((a, b) => a + b, 0) - gap;
+  let x = (1024 - total) / 2;
+  const capH = size * 0.72, baseY = 240 + capH / 2;
+  t.forEach((c, i) => {
+    const w = ctx.measureText(c).width, slot = adv[i] - gap;
+    ctx.fillText(c, x + (slot - w) / 2, baseY);
+    x += adv[i];
+  });
+  ctx.globalAlpha = 1;
+  // 兩顆固定螺絲
+  ctx.fillStyle = 'rgba(70,72,78,.8)';
+  [[78, 240], [946, 240]].forEach(([cx, cy]) => { ctx.beginPath(); ctx.arc(cx, cy, 13, 0, 7); ctx.fill(); });
+}
+function paintPlateTexture() {
+  if (!plateTex || !plateTexCv) return;
+  drawPlate(plateTexCv, plateText, plateStyle, false);
+  plateTex.source.update();                                      // 告訴 model-viewer：canvas 內容變了，重畫
+}
+function renderPlateUI() {
+  drawPlate($('platePv'), plateText, plateStyle, true);
+  drawPlate($('plateChipCv'), plateText, plateStyle, false);
+  $('plateChip').hidden = !plateText;
+  $('plateChipTx').textContent = plateView === 1 ? '前車牌特寫' : plateView === 2 ? '後車牌特寫' : plateText;
+  $('plateEditTx').hidden = !!plateText;
+  document.querySelectorAll('#plateStyle button').forEach((b) => b.classList.toggle('a', b.dataset.style === plateStyle));
+}
+function setPlate(text, style, persist) {
+  plateText = plateClean(text); if (style) plateStyle = style;
+  if (persist) { localStorage.setItem('plateText', plateText); localStorage.setItem('plateStyle', plateStyle); }
+  paintPlateTexture(); renderPlateUI(); renderPlateChip();
+}
+function initPlateTexture() {
+  const mat = carMv.model && carMv.model.materials.find((m) => m.name === 'LicensePlate');
+  if (!mat) return;                                              // 舊版模型沒有車牌平面就略過
+  plateTex = carMv.createCanvasTexture();
+  plateTexCv = plateTex.source.element;
+  plateTexCv.width = 1024; plateTexCv.height = 512;
+  mat.pbrMetallicRoughness.baseColorTexture.setTexture(plateTex);
+  try {   // 有就開非等向性過濾，從斜角看車牌字比較清楚（內部物件，失敗就算了）
+    const sym = Object.getOwnPropertySymbols(plateTex.source).find((y) => plateTex.source[y] && plateTex.source[y].isCanvasTexture);
+    if (sym) { const tt = plateTex.source[sym]; tt.anisotropy = 8; tt.needsUpdate = true; }
+  } catch (e) { /* ignore */ }
+  paintPlateTexture();
+}
+carMv.addEventListener('load', initPlateTexture);
+if (carMv.loaded) initPlateTexture();
+const plateInput = $('plateInput');
+plateInput.value = plateText;
+plateInput.addEventListener('input', (e) => {
+  if (e.isComposing) return;                                     // 注音／拼音選字中先不處理
+  const c = plateClean(plateInput.value);
+  if (c !== plateInput.value) plateInput.value = c;
+  setPlate(c, null, true);
+});
+plateInput.addEventListener('compositionend', () => plateInput.dispatchEvent(new Event('input')));
+document.querySelectorAll('#plateStyle button').forEach((b) => b.addEventListener('click', () => setPlate(plateText, b.dataset.style, true)));
+// 車輛頁的小標籤：點一下依序「前車牌特寫 → 後車牌特寫 → 回原本視角」；鉛筆去帳戶設定車牌
+const PLATE_VIEWS = {
+  1: { orbit: '0deg 80deg 1.6m', target: '0m 0.32m 2.1m', fov: HOME_FOV },
+  2: { orbit: '180deg 80deg 1.6m', target: '0m 0.5m -2.1m', fov: HOME_FOV },
+};
+let plateView = 0;
+function renderPlateChip() {
+  $('plateChip').classList.toggle('on', plateView > 0);
+  $('plateChipTx').textContent = plateView === 1 ? '前車牌特寫' : plateView === 2 ? '後車牌特寫' : plateText;
+}
+$('plateChip').addEventListener('click', () => {
+  clearTimeout(lidCamTimer);
+  plateView = (plateView + 1) % 3;
+  renderPlateChip();
+  if (plateView) { camGo(PLATE_VIEWS[plateView]); return; }
+  if (lidOrder.length) camGo(LIDS[lidOrder[lidOrder.length - 1]].view);     // 蓋子還開著：回到蓋子的視角
+  else { camGo(HOME_VIEW); setTimeout(() => { if (!lidOrder.length && !plateView) carMv.autoRotate = true; }, 650); }
+});
+$('plateEdit').addEventListener('click', () => { showView('account', 'plateSec'); setTimeout(() => plateInput.focus({ preventScroll: true }), 50); });
+renderPlateUI(); renderPlateChip();
 function renderDemo() {
   $('demoFrunkSw').classList.toggle('on', demoLid.frunk);
   $('demoTrunkSw').classList.toggle('on', demoLid.trunk);
