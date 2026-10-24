@@ -18,3 +18,12 @@ car.usdz / car.glb / car_poster.png
   the Sketchfab listing's license before relying on this publicly.
   car.glb: converted from the USDZ (custom usd-core -> glTF script), optimized with gltf-transform
   (Draco geometry, WebP textures). car_poster.png: render of car.glb used as the loading poster.
+
+car_anim.glb / car_poster.png (current 3D model on the 車輛 page, with frunk/trunk opening animation)
+  "2015 Porsche Boxster GTS (718)" by Ddiaz Design, Sketchfab, CC BY-NC-SA 4.0
+  (credit as given in the UI mockup /workspace/ui-mockup/web/index.html; non-commercial, share-alike).
+  Built from the mockup's boxster_web.glb (mockup author cut out the rear trunk lid + tub).
+  Modified: white paint, hood and rear lid re-parented onto hinge nodes "Frunk" (x -55deg) and
+  "Trunk" (x +78deg), dark frunk-tub floor added; normalised to 4.4 m length; textures resized to
+  1024 px WebP, geometry Draco-compressed. car_poster.png is a render of car_anim.glb.
+  car.usdz (AR Quick Look) is still the closed, un-animated USDZ above.

@@ -210,7 +210,7 @@
     </div>
 
     <div class="carousel" id="carousel">
-      <div class="slide"><div class="word">BOXSTER GTS</div><div class="horizon"></div><model-viewer class="car" id="carModel" src="car.glb" ios-src="car.usdz" poster="car_poster.png" alt="Porsche Boxster 3D 模型" camera-controls disable-zoom disable-pan auto-rotate auto-rotate-delay="4000" rotation-per-second="12deg" interaction-prompt="none" camera-orbit="-40deg 80deg 6.8m" min-camera-orbit="auto 60deg 6.8m" max-camera-orbit="auto 88deg 6.8m" camera-target="0m 0.35m 0m" field-of-view="28deg" shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral" ar ar-modes="quick-look webxr scene-viewer" touch-action="pan-y"></model-viewer></div>
+      <div class="slide"><div class="word">BOXSTER GTS</div><div class="horizon"></div><model-viewer class="car" id="carModel" src="car_anim.glb" ios-src="car.usdz" poster="car_poster.png" alt="Porsche Boxster 3D 模型" camera-controls disable-zoom disable-pan auto-rotate auto-rotate-delay="4000" rotation-per-second="12deg" interaction-prompt="none" camera-orbit="40deg 80deg 6.8m" min-camera-orbit="auto 60deg 6.8m" max-camera-orbit="auto 88deg 6.8m" camera-target="0m 0.35m 0m" field-of-view="28deg" shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral" ar ar-modes="quick-look webxr scene-viewer" touch-action="pan-y"></model-viewer></div>
       <div class="slide"><div class="word">XIAO ESP32-C6</div><div class="boardpic" role="img" aria-label="車上的藍牙控制模組示意圖"></div></div>
       <div class="slide"><div class="word">WIRING</div>
         <div class="wiring" id="wiring">
@@ -399,9 +399,21 @@
         </div>
       </details>
 
+      <div class="sec">3D 動畫預覽（不需板子）</div>
+      <div class="list">
+        <button class="li" id="demoFrunk" type="button">
+          <span class="k">前箱開啟動畫<small>只動畫面上的 3D 車，不會送任何藍牙指令。</small></span>
+          <span class="switch" id="demoFrunkSw"></span>
+        </button>
+        <button class="li" id="demoTrunk" type="button">
+          <span class="k">後箱開啟動畫<small>板子回報 FRUNK=1／TRUNK=1 時也會自動播放，回到 0 就關上。</small></span>
+          <span class="switch" id="demoTrunkSw"></span>
+        </button>
+      </div>
+
       <div class="sec">素材授權</div>
       <div class="list">
-        <div class="li"><span class="k"><small>車輛 3D 模型：使用者提供的 Porsche Boxster 模型（USDZ，原始來源 Sketchfab）。<br>模組示意圖為設計稿素材，並非 XIAO ESP32-C6 實物。</small></span></div>
+        <div class="li"><span class="k"><small>車輛 3D 模型："2015 Porsche Boxster GTS (718)" by Ddiaz Design · Sketchfab · CC BY-NC-SA 4.0（已修改：白色車漆、前箱／後箱分件開啟動畫）。<br>模組示意圖為設計稿素材，並非 XIAO ESP32-C6 實物。</small></span></div>
       </div>
     </div>
   </section>
@@ -564,6 +576,9 @@ function renderStatus() {
   $('tUnlock').classList.toggle('on', L === false);
   $('tFrunk').classList.toggle('on', dev.frunk === true);
   $('tTrunk').classList.toggle('on', dev.trunk === true);
+  // 3D 車：前箱／後箱開啟動畫（板子回報或動畫預覽）
+  setLid('frunk', dev.frunk === true || demoLid.frunk);
+  setLid('trunk', dev.trunk === true || demoLid.trunk);
   // LED（開發者區）
   $('tileOn').classList.toggle('on', dev.led === true);
   $('tileOff').classList.toggle('on', dev.led === false);
@@ -580,6 +595,87 @@ function renderTimes() {
   }
 }
 setInterval(renderTimes, 1000);
+
+// ===== 3D 車：前箱／後箱開啟動畫 =====
+// 參考 新機器人1 的做法：模型裡前箱蓋、後箱蓋各自掛在一個鉸鏈節點（Frunk / Trunk）上，
+// 開啟時繞 X 軸轉動（前箱 -55°、後箱 +78°），1 秒、三次方緩入緩出。
+const carMv = $('carModel');
+const HOME_ORBIT = '40deg 80deg 6.8m';
+const LIDS = {
+  frunk: { node: 'Frunk', deg: -55, orbit: '28deg 66deg 6.8m', cur: 0, tgt: 0, obj: null },
+  trunk: { node: 'Trunk', deg: 78, orbit: '150deg 62deg 6.8m', cur: 0, tgt: 0, obj: null },
+};
+const LID_DUR = 1.0;
+const demoLid = { frunk: false, trunk: false };
+const lidEase = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+let mvScene = null, lidRaf = 0, lidLast = 0, lidCamTimer = 0;
+function findMvScene() {
+  const sym = Object.getOwnPropertySymbols(carMv).find((s) => s.description === 'scene');
+  return sym ? carMv[sym] : null;
+}
+carMv.addEventListener('load', () => {
+  mvScene = findMvScene();
+  if (!mvScene) return;
+  for (const k in LIDS) LIDS[k].obj = mvScene.getObjectByName(LIDS[k].node);
+  lidKick();
+});
+function lidApply() {
+  if (!mvScene) return;
+  for (const k in LIDS) {
+    const L = LIDS[k];
+    if (L.obj) L.obj.rotation.x = L.deg * Math.PI / 180 * lidEase(L.cur);
+  }
+  if (mvScene.updateShadow) mvScene.updateShadow();
+  if (mvScene.queueRender) mvScene.queueRender();
+}
+function lidStep(now) {
+  const dt = Math.min(0.2, (now - lidLast) / 1000); lidLast = now;
+  let moving = false;
+  for (const k in LIDS) {
+    const L = LIDS[k], d = L.tgt - L.cur;
+    if (d) { L.cur += Math.sign(d) * Math.min(Math.abs(d), dt / LID_DUR); moving = true; }
+  }
+  lidApply();
+  lidRaf = moving ? requestAnimationFrame(lidStep) : 0;
+}
+function lidKick() {
+  if (lidRaf || !mvScene) return;
+  lidLast = performance.now();
+  lidRaf = requestAnimationFrame(lidStep);
+}
+function setLid(k, open) {
+  const L = LIDS[k], t = open ? 1 : 0;
+  if (L.tgt === t) return;
+  L.tgt = t;
+  // 鏡頭轉到正在開的那一側；全部關上後回到原本角度並恢復自動旋轉
+  clearTimeout(lidCamTimer);
+  if (open) {
+    carMv.autoRotate = false;
+    carMv.cameraOrbit = L.orbit;
+    carousel.scrollTo({ left: 0, behavior: 'smooth' });
+  } else if (!LIDS.frunk.tgt && !LIDS.trunk.tgt) {
+    lidCamTimer = setTimeout(() => { carMv.cameraOrbit = HOME_ORBIT; carMv.autoRotate = true; }, LID_DUR * 1000);
+  } else {
+    const other = LIDS[k === 'frunk' ? 'trunk' : 'frunk'];
+    carMv.cameraOrbit = other.orbit;
+  }
+  lidKick();
+}
+function renderDemo() {
+  $('demoFrunkSw').classList.toggle('on', demoLid.frunk);
+  $('demoTrunkSw').classList.toggle('on', demoLid.trunk);
+}
+['frunk', 'trunk'].forEach((k) => {
+  $('demo' + k[0].toUpperCase() + k.slice(1)).addEventListener('click', () => {
+    demoLid[k] = !demoLid[k];
+    renderDemo();
+    renderStatus();
+    if (demoLid[k]) showView('car');
+  });
+});
+// 網址加 ?demo=frunk、?demo=trunk 或 ?demo=frunk,trunk 可直接預覽
+new URLSearchParams(location.search).get('demo')?.split(',').forEach((k) => { if (k in demoLid) demoLid[k] = true; });
+renderDemo();
 
 // ===== 支援檢查 =====
 function checkSupport() {
