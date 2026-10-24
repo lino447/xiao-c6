@@ -600,10 +600,19 @@ setInterval(renderTimes, 1000);
 // 參考 新機器人1 的做法：模型裡前箱蓋、後箱蓋各自掛在一個鉸鏈節點（Frunk / Trunk）上，
 // 開啟時繞 X 軸轉動（前箱 -55°、後箱 +78°），1 秒、三次方緩入緩出。
 const carMv = $('carModel');
-const HOME_ORBIT = '40deg 80deg 6.8m';
+const HOME_ORBIT = '40deg 80deg 6.8m';   // 與 <model-viewer> 初始 camera-orbit 相同
+const HOME_TARGET = '0m 0.35m 0m';
+const HOME_FOV = '28deg';
+// 鏡頭視角（orbit / target / fov 全部一起設，不管使用者之前怎麼拖曳縮放）
+function camGo(v) {
+  carMv.cameraTarget = v.target;
+  carMv.fieldOfView = v.fov;
+  carMv.cameraOrbit = v.orbit;
+}
+const HOME_VIEW = { orbit: HOME_ORBIT, target: HOME_TARGET, fov: HOME_FOV };
 const LIDS = {
-  frunk: { node: 'Frunk', deg: -55, orbit: '28deg 66deg 6.8m', cur: 0, tgt: 0, obj: null },
-  trunk: { node: 'Trunk', deg: 78, orbit: '150deg 62deg 6.8m', cur: 0, tgt: 0, obj: null },
+  frunk: { node: 'Frunk', deg: -55, view: { orbit: '28deg 66deg 6.8m', target: HOME_TARGET, fov: HOME_FOV }, cur: 0, tgt: 0, obj: null },
+  trunk: { node: 'Trunk', deg: 78, view: { orbit: '150deg 62deg 6.8m', target: HOME_TARGET, fov: HOME_FOV }, cur: 0, tgt: 0, obj: null },
 };
 const LID_DUR = 1.0;
 const demoLid = { frunk: false, trunk: false };
@@ -643,21 +652,23 @@ function lidKick() {
   lidLast = performance.now();
   lidRaf = requestAnimationFrame(lidStep);
 }
+const lidOrder = [];   // 目前開著的蓋子，最後開啟的在最後面
 function setLid(k, open) {
   const L = LIDS[k], t = open ? 1 : 0;
   if (L.tgt === t) return;
   L.tgt = t;
-  // 鏡頭轉到正在開的那一側；全部關上後回到原本角度並恢復自動旋轉
+  const i = lidOrder.indexOf(k);
+  if (i >= 0) lidOrder.splice(i, 1);
+  if (open) lidOrder.push(k);
+  // 有蓋子開著：鏡頭固定到「最後開啟的那個蓋子」的視角並停止自動旋轉；
+  // 全部關上後回預設視角並恢復自動旋轉
   clearTimeout(lidCamTimer);
-  if (open) {
+  if (lidOrder.length) {
     carMv.autoRotate = false;
-    carMv.cameraOrbit = L.orbit;
-    carousel.scrollTo({ left: 0, behavior: 'smooth' });
-  } else if (!LIDS.frunk.tgt && !LIDS.trunk.tgt) {
-    lidCamTimer = setTimeout(() => { carMv.cameraOrbit = HOME_ORBIT; carMv.autoRotate = true; }, LID_DUR * 1000);
+    camGo(LIDS[lidOrder[lidOrder.length - 1]].view);
+    if (open) carousel.scrollTo({ left: 0, behavior: 'smooth' });
   } else {
-    const other = LIDS[k === 'frunk' ? 'trunk' : 'frunk'];
-    carMv.cameraOrbit = other.orbit;
+    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW); carMv.autoRotate = true; }, LID_DUR * 1000);
   }
   lidKick();
 }
