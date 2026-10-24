@@ -639,10 +639,43 @@ const HOME_ORBIT = '40deg 80deg 6.8m';   // 與 <model-viewer> 初始 camera-orb
 const HOME_TARGET = '0m 0.35m 0m';
 const HOME_FOV = '28deg';
 // 鏡頭視角（orbit / target / fov 全部一起設，不管使用者之前怎麼拖曳縮放）
+// 注意：model-viewer 的 auto-rotate 轉的是「模型」(turntableRotation)，不是鏡頭，
+// 所以光設 camera-orbit 不夠，還要把模型的自轉角度也歸零，畫面才會真的回到預設角度。
+let yawRaf = 0, camCheckTimer = 0;
+function yawHome(animate) {
+  cancelAnimationFrame(yawRaf); yawRaf = 0;
+  if (typeof carMv.resetTurntableRotation !== 'function') return;
+  let y0 = carMv.turntableRotation || 0;
+  y0 = ((y0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;   // 走最短的那一邊
+  if (!animate || Math.abs(y0) < 0.01) { carMv.resetTurntableRotation(0); return; }
+  const t0 = performance.now(), D = 600;
+  const step = (now) => {
+    const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3);
+    carMv.resetTurntableRotation(y0 * (1 - e));
+    yawRaf = t < 1 ? requestAnimationFrame(step) : 0;
+  };
+  yawRaf = requestAnimationFrame(step);
+}
+function camOff(v) {   // 目前實際鏡頭和目標視角差多少（度）
+  const o = carMv.getCameraOrbit(), g = carMv.getCameraTarget();
+  const m = /^(-?[\d.]+)deg (-?[\d.]+)deg (-?[\d.]+)m$/.exec(v.orbit);
+  if (!m) return 0;
+  const dth = Math.abs(((o.theta * 180 / Math.PI - +m[1]) % 360 + 540) % 360 - 180);
+  return Math.max(dth, Math.abs(o.phi * 180 / Math.PI - +m[2]), Math.abs(o.radius - +m[3]) * 10, Math.abs(g.y - 0.35) * 10, Math.abs(g.x) * 10, Math.abs(g.z) * 10);
+}
 function camGo(v) {
+  carMv.autoRotate = false;            // 先關自動旋轉，再設鏡頭
+  yawHome(true);                       // 模型自轉角度順順地歸零
+  const same = carMv.cameraOrbit === v.orbit && camOff(v) > 0.5;
+  if (same) carMv.cameraOrbit = v.orbit.replace(/^(-?[\d.]+)deg/, (_, a) => (+a + 0.01) + 'deg');   // 屬性值沒變時 model-viewer 不會更新，先錯開一點
   carMv.cameraTarget = v.target;
   carMv.fieldOfView = v.fov;
   carMv.cameraOrbit = v.orbit;
+  // 動畫結束後再檢查一次，漂掉就拉回來
+  clearTimeout(camCheckTimer);
+  camCheckTimer = setTimeout(() => {
+    if (camOff(v) > 0.5) { carMv.cameraTarget = v.target; carMv.fieldOfView = v.fov; carMv.cameraOrbit = v.orbit.replace(/^(-?[\d.]+)deg/, (_, a) => (+a + 0.01) + 'deg'); carMv.cameraOrbit = v.orbit; }
+  }, 1300);
 }
 const HOME_VIEW = { orbit: HOME_ORBIT, target: HOME_TARGET, fov: HOME_FOV };
 const LIDS = {
@@ -699,11 +732,10 @@ function setLid(k, open) {
   // 全部關上後回預設視角並恢復自動旋轉
   clearTimeout(lidCamTimer);
   if (lidOrder.length) {
-    carMv.autoRotate = false;
     camGo(LIDS[lidOrder[lidOrder.length - 1]].view);
     if (open) carousel.scrollTo({ left: 0, behavior: 'smooth' });
   } else {
-    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW); carMv.autoRotate = true; }, LID_DUR * 1000);
+    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW); setTimeout(() => { if (!lidOrder.length) carMv.autoRotate = true; }, 650); }, LID_DUR * 1000);
   }
   lidKick();
 }
