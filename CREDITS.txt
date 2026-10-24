@@ -27,3 +27,6 @@ car_anim.glb / car_poster.png (current 3D model on the 車輛 page, with frunk/t
   "Trunk" (x +78deg), dark frunk-tub floor added; normalised to 4.4 m length; textures resized to
   1024 px WebP, geometry Draco-compressed. car_poster.png is a render of car_anim.glb.
   car.usdz (AR Quick Look) is still the closed, un-animated USDZ above.
+
+[車牌]
+car_anim.glb 內另外加入兩片自製的車牌平面 (PlateFront / PlateRear，約 2 KB)，貼圖由網頁以 canvas 即時繪製，非第三方素材。
