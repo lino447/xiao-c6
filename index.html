@@ -468,6 +468,10 @@
           <span class="k">後箱開啟動畫<small>板子回報 FRUNK=1／TRUNK=1 時也會自動播放，回到 0 就關上。</small></span>
           <span class="switch" id="demoTrunkSw"></span>
         </button>
+        <button class="li" id="demoDoor" type="button">
+          <span class="k">開門動畫（左右兩側車門）<small>開／關兩側車門，只動畫面上的 3D 車，不會送任何藍牙指令。</small></span>
+          <span class="switch" id="demoDoorSw"></span>
+        </button>
       </div>
 
       <div class="sec">素材授權</div>
@@ -642,6 +646,7 @@ function renderStatus() {
   // 3D 車：前箱／後箱開啟動畫（板子回報或動畫預覽）
   setLid('frunk', dev.frunk === true || demoLid.frunk);
   setLid('trunk', dev.trunk === true || demoLid.trunk);
+  setLid('door', demoLid.door);          // 車門只有動畫預覽，板子沒有車門指令
   // LED（開發者區）
   $('tileOn').classList.toggle('on', dev.led === true);
   $('tileOff').classList.toggle('on', dev.led === false);
@@ -712,9 +717,11 @@ const HOME_VIEW = { orbit: HOME_ORBIT, target: HOME_TARGET, fov: HOME_FOV };
 const LIDS = {
   frunk: { node: 'Frunk', deg: -55, view: { orbit: '28deg 66deg 6.8m', target: HOME_TARGET, fov: HOME_FOV }, cur: 0, tgt: 0, obj: null },
   trunk: { node: 'Trunk', deg: 78, view: { orbit: '150deg 62deg 6.8m', target: HOME_TARGET, fov: HOME_FOV }, cur: 0, tgt: 0, obj: null },
+  // 車門：Door_L / Door_R 兩個獨立節點（只有位移，原點在鉸鏈），繞垂直（Y）軸向外轉 60°：L 轉 -Y、R 轉 +Y
+  door: { node: null, nodes: [['Door_L', -1], ['Door_R', 1]], deg: 60, view: { orbit: '50deg 68deg 6.8m', target: HOME_TARGET, fov: HOME_FOV }, cur: 0, tgt: 0, obj: null, objs: null },
 };
 const LID_DUR = 1.0;
-const demoLid = { frunk: false, trunk: false };
+const demoLid = { frunk: false, trunk: false, door: false };
 const lidEase = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 let mvScene = null, lidRaf = 0, lidLast = 0, lidCamTimer = 0;
 function findMvScene() {
@@ -724,14 +731,16 @@ function findMvScene() {
 carMv.addEventListener('load', () => {
   mvScene = findMvScene();
   if (!mvScene) return;
-  for (const k in LIDS) LIDS[k].obj = mvScene.getObjectByName(LIDS[k].node);
+  for (const k in LIDS) LIDS[k].obj = LIDS[k].node ? mvScene.getObjectByName(LIDS[k].node) : null;
+  LIDS.door.objs = LIDS.door.nodes.map(([n, sg]) => ({ o: mvScene.getObjectByName(n), s: sg })).filter((x) => x.o);
   lidKick();
 });
 function lidApply() {
   if (!mvScene) return;
   for (const k in LIDS) {
-    const L = LIDS[k];
-    if (L.obj) L.obj.rotation.x = L.deg * Math.PI / 180 * lidEase(L.cur);
+    const L = LIDS[k], a = L.deg * Math.PI / 180 * lidEase(L.cur);
+    if (L.objs) L.objs.forEach((p) => { p.o.rotation.y = p.s * a; });
+    else if (L.obj) L.obj.rotation.x = a;
   }
   if (mvScene.updateShadow) mvScene.updateShadow();
   if (mvScene.queueRender) mvScene.queueRender();
@@ -1005,8 +1014,9 @@ renderPlateUI(); renderPlateChip();
 function renderDemo() {
   $('demoFrunkSw').classList.toggle('on', demoLid.frunk);
   $('demoTrunkSw').classList.toggle('on', demoLid.trunk);
+  $('demoDoorSw').classList.toggle('on', demoLid.door);
 }
-['frunk', 'trunk'].forEach((k) => {
+['frunk', 'trunk', 'door'].forEach((k) => {
   $('demo' + k[0].toUpperCase() + k.slice(1)).addEventListener('click', () => {
     demoLid[k] = !demoLid[k];
     renderDemo();
@@ -1014,7 +1024,7 @@ function renderDemo() {
     if (demoLid[k]) showView('car');
   });
 });
-// 網址加 ?demo=frunk、?demo=trunk 或 ?demo=frunk,trunk 可直接預覽
+// 網址加 ?demo=frunk、?demo=trunk、?demo=door 或 ?demo=frunk,trunk,door 可直接預覽
 new URLSearchParams(location.search).get('demo')?.split(',').forEach((k) => { if (k in demoLid) demoLid[k] = true; });
 renderDemo();
 
