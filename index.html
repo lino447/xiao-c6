@@ -793,7 +793,24 @@ function lidKick() {
 const lidOrder = [];   // 目前開著的蓋子，最後開啟的在最後面
 function setLid(k, open) {
   const L = LIDS[k], t = open ? 1 : 0;
+  if (L.closeTimer) {                    // 正在「先把鏡頭轉回開蓋視角、再關」的等待中
+    if (open) { clearTimeout(L.closeTimer); L.closeTimer = 0; }   // 又要開：取消這次關閉，蓋子本來就還開著
+    return;
+  }
   if (L.tgt === t) return;
+  if (open) { applyLid(k, true); return; }
+  // 關上：先讓鏡頭平滑轉回「當初開這個蓋子的視角」（你手動轉過的話），到位後才開始關，關完再回預設視角
+  const off = mvScene && (camOff(L.view) > 0.5 || Math.abs(carMv.turntableRotation || 0) > 0.02);
+  if (off) {
+    plateView = 0; renderPlateChip();
+    clearTimeout(lidCamTimer);
+    carMv.autoRotate = false;
+    camGo(L.view, true);
+    L.closeTimer = setTimeout(() => { L.closeTimer = 0; applyLid(k, false); }, 650);
+  } else applyLid(k, false);
+}
+function applyLid(k, open) {
+  const L = LIDS[k], t = open ? 1 : 0;
   L.tgt = t;
   plateView = 0; renderPlateChip();     // 開關蓋子時鏡頭由蓋子接管，結束車牌特寫
   const i = lidOrder.indexOf(k);
