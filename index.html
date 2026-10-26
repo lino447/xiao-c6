@@ -800,7 +800,7 @@ function setLid(k, open) {
   // 全部關上後回預設視角並恢復自動旋轉
   clearTimeout(lidCamTimer);
   if (lidOrder.length) {
-    camGo(LIDS[lidOrder[lidOrder.length - 1]].view, !open);     // 關上其中一個、另一個還開著：鏡頭平滑移回另一個的視角
+    camGo(LIDS[lidOrder[lidOrder.length - 1]].view, true);     // 開啟或關上其中一個、另一個還開著：鏡頭平滑移到最後開啟那個蓋子的視角
     if (open) carousel.scrollTo({ left: 0, behavior: 'smooth' });
   } else {
     lidCamTimer = setTimeout(() => { camGo(HOME_VIEW, true); setTimeout(() => { if (!lidOrder.length) carMv.autoRotate = true; }, 650); }, LID_DUR * 1000);
