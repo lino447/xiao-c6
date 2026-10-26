@@ -697,16 +697,43 @@ function camOff(v) {   // 目前實際鏡頭和目標視角差多少（度）
   const dth = Math.abs(((o.theta * 180 / Math.PI - +m[1]) % 360 + 540) % 360 - 180);
   return Math.max(dth, Math.abs(o.phi * 180 / Math.PI - +m[2]), Math.abs(o.radius - +m[3]) * 10, Math.abs(g.y - tg[1]) * 10, Math.abs(g.x - tg[0]) * 10, Math.abs(g.z - tg[2]) * 10);
 }
-function camGo(v) {
+// 鏡頭平滑移動（關上蓋子回預設／回另一個還開著的蓋子的視角用）：
+// 600 ms、cubic ease-out（跟 yawHome 同一套），orbit / target / fov 一起從目前位置走到目標；使用者一碰就停
+let camAnimRaf = 0;
+function camStop() { cancelAnimationFrame(camAnimRaf); camAnimRaf = 0; }
+carMv.addEventListener('camera-change', (e) => { if (camAnimRaf && e.detail && e.detail.source === 'user-interaction') { camStop(); clearTimeout(camCheckTimer); } });
+function camGlide(v) {
+  const m = /^(-?[\d.]+)deg (-?[\d.]+)deg (-?[\d.]+)m$/.exec(v.orbit);
+  if (!m) { carMv.cameraTarget = v.target; carMv.fieldOfView = v.fov; carMv.cameraOrbit = v.orbit; return; }
+  const o = carMv.getCameraOrbit(), g = carMv.getCameraTarget(), f0 = carMv.getFieldOfView();
+  const th0 = o.theta * 180 / Math.PI, ph0 = o.phi * 180 / Math.PI, r0 = o.radius;
+  const dth = ((+m[1] - th0) % 360 + 540) % 360 - 180;                 // 走最短的那一邊
+  const tg = v.target.split(' ').map((x) => parseFloat(x)), f1 = parseFloat(v.fov);
+  const t0 = performance.now(), D = 600;
+  const step = (now) => {
+    const t = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - t, 3);
+    if (t >= 1) { carMv.cameraTarget = v.target; carMv.fieldOfView = v.fov; carMv.cameraOrbit = v.orbit; camAnimRaf = 0; return; }
+    carMv.cameraTarget = `${g.x + (tg[0] - g.x) * e}m ${g.y + (tg[1] - g.y) * e}m ${g.z + (tg[2] - g.z) * e}m`;
+    carMv.fieldOfView = `${f0 + (f1 - f0) * e}deg`;
+    carMv.cameraOrbit = `${th0 + dth * e}deg ${ph0 + (+m[2] - ph0) * e}deg ${r0 + (+m[3] - r0) * e}m`;
+    camAnimRaf = requestAnimationFrame(step);
+  };
+  camAnimRaf = requestAnimationFrame(step);
+}
+function camGo(v, smooth) {
+  camStop();
   carMv.autoRotate = false;            // 先關自動旋轉，再設鏡頭
   // 預設視角不能縮放（半徑固定 6.8 m）；車牌特寫需要靠近，暫時放寬最小半徑，離開特寫就還原
   carMv.minCameraOrbit = parseFloat(v.orbit.split(' ')[2]) < 6 ? 'auto 60deg 1.2m' : 'auto 60deg 6.8m';
   yawHome(true);                       // 模型自轉角度順順地歸零
-  const same = carMv.cameraOrbit === v.orbit && camOff(v) > 0.5;
-  if (same) carMv.cameraOrbit = v.orbit.replace(/^(-?[\d.]+)deg/, (_, a) => (+a + 0.01) + 'deg');   // 屬性值沒變時 model-viewer 不會更新，先錯開一點
-  carMv.cameraTarget = v.target;
-  carMv.fieldOfView = v.fov;
-  carMv.cameraOrbit = v.orbit;
+  if (smooth) camGlide(v);
+  else {
+    const same = carMv.cameraOrbit === v.orbit && camOff(v) > 0.5;
+    if (same) carMv.cameraOrbit = v.orbit.replace(/^(-?[\d.]+)deg/, (_, a) => (+a + 0.01) + 'deg');   // 屬性值沒變時 model-viewer 不會更新，先錯開一點
+    carMv.cameraTarget = v.target;
+    carMv.fieldOfView = v.fov;
+    carMv.cameraOrbit = v.orbit;
+  }
   // 動畫結束後再檢查一次，漂掉就拉回來
   clearTimeout(camCheckTimer);
   camCheckTimer = setTimeout(() => {
@@ -773,10 +800,10 @@ function setLid(k, open) {
   // 全部關上後回預設視角並恢復自動旋轉
   clearTimeout(lidCamTimer);
   if (lidOrder.length) {
-    camGo(LIDS[lidOrder[lidOrder.length - 1]].view);
+    camGo(LIDS[lidOrder[lidOrder.length - 1]].view, !open);     // 關上其中一個、另一個還開著：鏡頭平滑移回另一個的視角
     if (open) carousel.scrollTo({ left: 0, behavior: 'smooth' });
   } else {
-    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW); setTimeout(() => { if (!lidOrder.length) carMv.autoRotate = true; }, 650); }, LID_DUR * 1000);
+    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW, true); setTimeout(() => { if (!lidOrder.length) carMv.autoRotate = true; }, 650); }, LID_DUR * 1000);
   }
   lidKick();
 }
