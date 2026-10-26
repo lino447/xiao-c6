@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="zh-Hant"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>零件挑選器 v47</title>
+<title>零件挑選器 v47c</title>
 <style>
 html,body{margin:0;height:100%;min-height:100vh;overflow:hidden;background:#7b8794;font-family:-apple-system,"PingFang TC",sans-serif;-webkit-user-select:none;user-select:none}
 #c{position:fixed;left:0;top:0;width:100%;height:100%;touch-action:none;display:block}
 #bar{position:fixed;top:0;left:0;right:0;padding:6px;display:flex;flex-wrap:wrap;gap:6px;background:rgba(20,24,30,.75);z-index:5}
-button{font-size:15px;padding:8px 10px;border-radius:8px;border:1px solid #999;background:#eef1f4;color:#111}
+button{font-size:17px;min-height:44px;padding:8px 12px;border-radius:10px;border:1px solid #999;background:#eef1f4;color:#111;touch-action:manipulation}
+button.mode{font-weight:700;min-width:84px}
+#modeRow{display:flex;gap:6px;width:100%}
+#modeRow button{flex:1;font-size:19px}
+#qui{display:none;flex-direction:column}
+#qlist{overflow:auto;padding:0 10px;font-size:14px;flex:1;line-height:1.35;font-family:ui-monospace,Menlo,monospace}
+.qp{border-bottom:1px solid #555;padding:3px 0}.qp b{color:#ffd23a}
+#qrow{display:flex;flex-wrap:wrap;gap:8px;padding:6px 10px}
+body.q #list,body.q #row{display:none}body.q #qui{display:flex}
+#bSnap.on{background:#1f9d55;border-color:#1f9d55}
 button.on{background:#2f7cf6;color:#fff;border-color:#2f7cf6}
 #panel{position:fixed;left:0;right:0;bottom:0;max-height:38%;background:rgba(20,24,30,.85);color:#fff;z-index:5;display:flex;flex-direction:column}
 #info{padding:6px 10px;font-size:15px;min-height:20px;color:#ffd7d7}
@@ -22,12 +31,14 @@ button.on{background:#2f7cf6;color:#fff;border-color:#2f7cf6}
 <div id="status">⚠ JavaScript 尚未執行。若一直看到這行,代表這個預覽器停用了 JS,請改用 Safari 開啟(分享→在 Safari 開啟,或存到「檔案」後用 Safari 開)。</div>
 <noscript><div style="position:fixed;top:140px;left:0;right:0;z-index:9;background:#a11;color:#fff;padding:8px">此預覽已停用 JavaScript,請改用 Safari 開啟這個檔案。</div></noscript>
 <div id="bar">
+<div id="modeRow"><button class="mode on" id="bModeP">零件</button><button class="mode" id="bModeQ">四角</button></div>
 <button id="bDoor">隱藏車門</button><button id="bPaint">隱藏車漆</button><button id="bGlass">隱藏玻璃</button>
 <button id="bL">只顯示左門</button><button id="bHide">隱藏已選</button><button id="bView">重設視角</button>
 </div>
 <div id="panel"><div id="info">點一下零件選取(紅色);再點一次取消。單指旋轉、雙指縮放/平移。</div>
 <div id="list"></div>
 <div id="row"><button id="bCopy">複製清單</button><button id="bClr">清除全部</button><span id="msg" style="align-self:center;font-size:14px"></span></div>
+<div id="qui"><div id="qlist"></div><div id="qrow"><button id="bSnap" class="on">吸附最近頂點:開</button><button id="bQundo">清除最後一點</button><button id="bQclr">清除全部</button><button id="bQcopy">複製</button><span id="qmsg" style="align-self:center;font-size:14px"></span></div></div>
 <textarea id="ta"></textarea></div>
 <script>/**
  * @license
@@ -54272,10 +54283,10 @@ function finish(){
   bb.getCenter(ctr);size=bb.getSize(new T.Vector3()).length();
   resize();home();
   initUI();
-  var loop=function(){try{R.render(sc,cam);}catch(e){ERR(e);return;}requestAnimationFrame(loop);};
+  var loop=function(){try{if(window.__pre)window.__pre();R.render(sc,cam);}catch(e){ERR(e);return;}requestAnimationFrame(loop);};
   loop();
   S('載入完成 '+META.length+' 個零件 / 渲染器 WebGL2 / DPR '+R.getPixelRatio());
-  document.title='零件挑選器 v47 (已載入)';
+  document.title='零件挑選器 v47c (已載入)';setTimeout(function(){var e=document.getElementById('status');if(e&&e.style.background!=='rgb(170, 17, 17)'&&e.style.background!=='#a11')e.style.display='none';},3000);
 }
 
 function initUI(){
@@ -54327,7 +54338,7 @@ function up(e){var was=ptr.size===1&&tap&&down&&performance.now()-down.t<600;ptr
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',function(e){ptr.delete(e.pointerId);});
 cv.addEventListener('wheel',function(e){e.preventDefault();dist=Math.min(size*4,Math.max(0.15,dist*(1+e.deltaY*0.001)));setCam();},{passive:false});
 var rc=new T.Raycaster();
-function pick(x,y){var r=rect();var v=new T.Vector2((x-r.left)/r.width*2-1,-((y-r.top)/r.height)*2+1);rc.setFromCamera(v,cam);
+function pick(x,y){if(mode==='quad')return pickQ(x,y);var r=rect();var v=new T.Vector2((x-r.left)/r.width*2-1,-((y-r.top)/r.height)*2+1);rc.setFromCamera(v,cam);
   var hits=rc.intersectObjects(meshes.filter(function(m){return m.visible;}),false);
   var info=document.getElementById('info');
   if(!hits.length){info.textContent='沒點到零件';return;}
@@ -54335,6 +54346,78 @@ function pick(x,y){var r=rect();var v=new T.Vector2((x-r.left)/r.width*2-1,-((y-
   var tri=it.triMap?it.triMap[h.faceIndex]:h.faceIndex;var c=it.cid[tri];
   var was=sel.has(key(mi,c));toggle(mi,c);
   info.textContent=(was?'取消:':'選取:')+label(mi,c);}
+
+var mode='part';
+var snap=true;
+var qpts=[];
+var qgrp=new T.Group();sc.add(qgrp);
+var sphG=new T.SphereGeometry(1,16,12),cylG=new T.CylinderGeometry(1,1,1,8,1,true);
+var COL=[0xffd23a,0xff7a1a,0x2fd0ff,0xb36bff];
+function toCar(p){return {x:p.x,y:-p.z,z:p.y};} // viewer (Y-up, +z=front) -> car frame (x=left,y=rear,z=up)
+function fmt(v){return (v<0?'':'+')+v.toFixed(3);}
+function mkLabel(n){var c=document.createElement('canvas');c.width=c.height=64;var g=c.getContext('2d');
+  g.fillStyle='#111';g.beginPath();g.arc(32,32,30,0,7);g.fill();g.lineWidth=4;g.strokeStyle='#fff';g.stroke();
+  g.fillStyle='#fff';g.font='bold 40px sans-serif';g.textAlign='center';g.textBaseline='middle';g.fillText(String(n),32,34);
+  var tx=new T.CanvasTexture(c);var sp=new T.Sprite(new T.SpriteMaterial({map:tx,depthTest:false,depthWrite:false,transparent:true}));sp.renderOrder=1002;return sp;}
+function qClearObjs(){while(qgrp.children.length)qgrp.remove(qgrp.children[0]);}
+var qEdges=[],qSph=[],qLab=[];
+function qRebuild(){qClearObjs();qEdges=[];qSph=[];qLab=[];
+  qpts.forEach(function(p,i){
+    var m=new T.Mesh(sphG,new T.MeshBasicMaterial({color:COL[i],depthTest:false,depthWrite:false,transparent:true,opacity:0.95}));m.renderOrder=1000;m.position.copy(p.v);qgrp.add(m);qSph.push(m);
+    var l=mkLabel(i+1);l.position.copy(p.v);qgrp.add(l);qLab.push(l);});
+  var n=qpts.length,pairs=[];for(var i=0;i+1<n;i++)pairs.push([i,i+1]);if(n===4)pairs.push([3,0]);
+  pairs.forEach(function(pr){var m=new T.Mesh(cylG,new T.MeshBasicMaterial({color:0xffffff,depthTest:false,depthWrite:false,transparent:true,opacity:0.9}));m.renderOrder=999;m.userData.pr=pr;qgrp.add(m);qEdges.push(m);});
+  qUpdate();}
+function qUpdate(){
+  var up=new T.Vector3(0,1,0),d=new T.Vector3();
+  qSph.forEach(function(m){var k=cam.position.distanceTo(m.position);m.scale.setScalar(k*0.011);});
+  qLab.forEach(function(m,i){var k=cam.position.distanceTo(m.position);m.scale.setScalar(k*0.03);m.center.set(-0.5,-0.5);});
+  qEdges.forEach(function(m){var a=qpts[m.userData.pr[0]].v,b=qpts[m.userData.pr[1]].v;d.subVectors(b,a);var len=d.length();if(len<1e-9){m.visible=false;return;}m.visible=true;
+    m.position.copy(a).addScaledVector(d,0.5);m.quaternion.setFromUnitVectors(up,d.clone().normalize());var k=cam.position.distanceTo(m.position);m.scale.set(k*0.0035,len,k*0.0035);});}
+window.__pre=function(){if(qpts.length)qUpdate();};
+function nearestVtx(it,tri,pt){var best=-1,bd=1e9,P=it.g.attributes.position;
+  for(var k=0;k<3;k++){var vi=it.idx[3*tri+k];var dx=P.getX(vi)-pt.x,dy=P.getY(vi)-pt.y,dz=P.getZ(vi)-pt.z;var d=dx*dx+dy*dy+dz*dz;if(d<bd){bd=d;best=vi;}}
+  return best;}
+function pickQ(x,y){var r=rect();var v=new T.Vector2((x-r.left)/r.width*2-1,-((y-r.top)/r.height)*2+1);rc.setFromCamera(v,cam);
+  var hits=rc.intersectObjects(meshes.filter(function(m){return m.visible;}),false);
+  var info=document.getElementById('info');
+  if(!hits.length){info.textContent='沒點到模型(點在模型表面上)';return;}
+  if(qpts.length>=4){info.textContent='已有 4 點。請先按「清除最後一點」或「清除全部」。';return;}
+  var h=hits[0],mi=h.object.userData.mi,it=items[mi];
+  var tri=it.triMap?it.triMap[h.faceIndex]:h.faceIndex;var c=it.cid[tri];
+  var vi=nearestVtx(it,tri,h.point);var P=it.g.attributes.position;
+  var vp=new T.Vector3(P.getX(vi),P.getY(vi),P.getZ(vi));
+  var pos=snap?vp:h.point.clone();
+  qpts.push({v:pos,hit:h.point.clone(),mi:mi,tri:tri,comp:c,vi:vi,snapped:snap,name:it.m.side+' / '+short(it.m)});
+  qRebuild();qRender();
+  info.textContent='已加入第 '+qpts.length+' 點'+(qpts.length<4?',再點 '+(4-qpts.length)+' 點':',四點完成');}
+function bbox(){var mn={x:1e9,y:1e9,z:1e9},mx={x:-1e9,y:-1e9,z:-1e9};qpts.forEach(function(p){var c=toCar(p.v);['x','y','z'].forEach(function(k){mn[k]=Math.min(mn[k],c[k]);mx[k]=Math.max(mx[k],c[k]);});});return {mn:mn,mx:mx};}
+function qText(){var L=['四角 (車身座標,公尺; x=車左 y=車後 z=上; 模型為載入時的姿態)'];
+  qpts.forEach(function(p,i){var c=toCar(p.v);L.push('P'+(i+1)+' x='+fmt(c.x)+' y='+fmt(c.y)+' z='+fmt(c.z)+' | '+p.name+' | comp '+p.comp+' | tri '+p.tri+' | vtx '+p.vi+(p.snapped?' (吸附)':' (未吸附,點擊處)'));});
+  if(qpts.length){var b=bbox();L.push('BBox x['+fmt(b.mn.x)+','+fmt(b.mx.x)+'] y['+fmt(b.mn.y)+','+fmt(b.mx.y)+'] z['+fmt(b.mn.z)+','+fmt(b.mx.z)+'] 尺寸 '+(b.mx.x-b.mn.x).toFixed(3)+' x '+(b.mx.y-b.mn.y).toFixed(3)+' x '+(b.mx.z-b.mn.z).toFixed(3));}
+  return L.join('\n');}
+function qRender(){var Lq=document.getElementById('qlist');Lq.innerHTML='';
+  qpts.forEach(function(p,i){var c=toCar(p.v);var d=document.createElement('div');d.className='qp';
+    d.innerHTML='<b>'+(i+1)+'</b> x '+fmt(c.x)+' y '+fmt(c.y)+' z '+fmt(c.z)+'<br><span style="color:#bbb">'+p.name+' / comp '+p.comp+' / tri '+p.tri+' / vtx '+p.vi+(p.snapped?' 吸附':'')+'</span>';Lq.appendChild(d);});
+  if(qpts.length>1){var b=bbox(),d2=document.createElement('div');d2.className='qp';d2.style.color='#9fe3ff';d2.textContent='BBox 尺寸 '+(b.mx.x-b.mn.x).toFixed(3)+' x '+(b.mx.y-b.mn.y).toFixed(3)+' x '+(b.mx.z-b.mn.z).toFixed(3);Lq.appendChild(d2);}
+  if(!qpts.length){Lq.textContent='點模型表面最多 4 點;拖曳是旋轉視角,輕點才算一點。';}}
+function setMode(m){mode=m;document.body.classList.toggle('q',m==='quad');
+  document.getElementById('bModeP').classList.toggle('on',m==='part');document.getElementById('bModeQ').classList.toggle('on',m==='quad');
+  qgrp.visible=(m==='quad');
+  document.getElementById('info').textContent=m==='quad'?'四角模式:輕點模型表面加點(最多 4 點)。拖曳旋轉、雙指縮放。':'點一下零件選取(紅色);再點一次取消。單指旋轉、雙指縮放/平移。';
+  if(m==='quad')qRender();}
+bind('bModeP',function(){setMode('part');});
+bind('bModeQ',function(){setMode('quad');});
+bind('bSnap',function(b){snap=!snap;b.classList.toggle('on',snap);b.textContent='吸附最近頂點:'+(snap?'開':'關');});
+bind('bQundo',function(){qpts.pop();qRebuild();qRender();document.getElementById('info').textContent='已清除最後一點';});
+bind('bQclr',function(){qpts=[];qRebuild();qRender();document.getElementById('info').textContent='已清除全部';});
+bind('bQcopy',function(){var t=qText(),msg=document.getElementById('qmsg');if(!qpts.length){msg.textContent='還沒有點';return;}
+  var ta=document.getElementById('ta');ta.value=t;window.__lastCopy=t;
+  var ok=function(){msg.textContent='已複製 '+qpts.length+' 點';};
+  var fb=function(){ta.style.left='0';ta.focus();ta.select();try{ta.setSelectionRange(0,t.length);}catch(e){}var r=false;try{r=document.execCommand('copy');}catch(e){}ta.style.left='-9999px';msg.textContent=r?('已複製 '+qpts.length+' 點'):'複製失敗,請手動複製或截圖';};
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(ok,fb);else fb();});
+qgrp.visible=false;
+window.__pkq={pts:qpts,get:function(){return qpts;},text:qText,toCar:toCar,setMode:setMode,pickQ:pickQ};
 window.__pk={sel:sel,pick:pick,items:items,cam:cam,setCam:setCam,st:st,vis:vis};
 renderList();
 }
