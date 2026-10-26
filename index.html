@@ -701,7 +701,10 @@ function camOff(v) {   // 目前實際鏡頭和目標視角差多少（度）
 // 600 ms、cubic ease-out（跟 yawHome 同一套），orbit / target / fov 一起從目前位置走到目標；使用者一碰就停
 let camAnimRaf = 0;
 function camStop() { cancelAnimationFrame(camAnimRaf); camAnimRaf = 0; }
-carMv.addEventListener('camera-change', (e) => { if (camAnimRaf && e.detail && e.detail.source === 'user-interaction') { camStop(); clearTimeout(camCheckTimer); } });
+// 用「手指／滑鼠真的碰到畫面」判斷使用者介入，不看 camera-change 的 source：
+// model-viewer 手動拖曳過後，之後每次畫面變動（自轉、歸零）事件的 source 都還是 'user-interaction'，會把平滑移動誤判成使用者操作而中途取消，鏡頭就不會轉到蓋子的視角。
+const camUserTouch = () => { if (camAnimRaf) { camStop(); clearTimeout(camCheckTimer); } };
+['pointerdown', 'touchstart', 'wheel'].forEach((ev) => carMv.addEventListener(ev, camUserTouch, { passive: true }));
 function camGlide(v) {
   const m = /^(-?[\d.]+)deg (-?[\d.]+)deg (-?[\d.]+)m$/.exec(v.orbit);
   if (!m) { carMv.cameraTarget = v.target; carMv.fieldOfView = v.fov; carMv.cameraOrbit = v.orbit; return; }
