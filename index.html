@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#000000">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
+<script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js" onerror="window.__mvFail=1"></script>
 <title>我的車 · XIAO ESP32-C6 藍牙遙控</title>
 <style>
   :root {
@@ -33,6 +33,7 @@
 
   /* ===== header ===== */
   .upd { font-size:12px; color:var(--t2); padding-top:12px; }
+  .kick { font-size:12.5px; color:var(--t3); padding-top:12px; }
   h1, h2 { font-weight:500; font-size:26px; letter-spacing:.3px; margin-top:4px; }
   .chip { display:inline-flex; align-items:center; gap:6px; margin-top:10px; font-size:12px; color:var(--t2); }
   .bt { width:22px; height:22px; border-radius:6px; background:var(--card2); display:flex; align-items:center; justify-content:center; position:relative; flex:none; }
@@ -54,19 +55,19 @@
   /* ===== common ===== */
   .btn { width:100%; height:42px; border-radius:8px; background:var(--card); display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; margin-top:10px; text-align:center; }
   .btn.primary { background:var(--t1); color:#000; font-weight:500; }
-  .btn.lg { height:52px; font-size:16px; border-radius:10px; }
+  .btn.lg { height:48px; font-size:15px; font-weight:500; border-radius:10px; margin-top:16px; }
   .btn:disabled { opacity:.45; }
-  .btn:active:not(:disabled), .tile:active:not(:disabled) { transform:scale(.98); }
+  .btn:active:not(:disabled), .tile:active:not(:disabled) { transform:scale(.97); opacity:.85; }
   .card { background:var(--card); border-radius:12px; margin-top:10px; padding:14px 16px; }
   .card.flush { padding-bottom:0; }
   .big { display:flex; align-items:baseline; gap:8px; font-size:22px; font-weight:600; white-space:nowrap; }
   .big small { font-size:13px; font-weight:400; color:var(--t2); }
   .big .bar { width:1px; height:18px; background:#8a8b90; align-self:center; }
-  .prog { height:4px; background:#3a3b40; border-radius:2px; margin-top:10px; overflow:hidden; position:relative; }
+  .prog { height:3px; background:#3a3b40; border-radius:2px; margin-top:10px; overflow:hidden; position:relative; }
   .prog i { display:block; height:100%; width:0; background:#e9eaee; border-radius:2px; transition:width .4s; }
   .prog.run i { position:absolute; width:36%; animation:scan 1.3s ease-in-out infinite; }
-  .sub { display:flex; align-items:center; gap:8px; margin-top:10px; font-size:13px; color:#d8d9dd; width:100%; }
-  .sub .ch { margin-left:auto; color:var(--t2); }
+  .sub { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; color:var(--t2); width:100%; }
+  .sub .ch { margin-left:auto; color:var(--t3); font-size:16px; }
   .srow { display:flex; margin-top:14px; border-top:1px solid var(--line); }
   .srow > div { flex:1; padding:10px 0 11px; text-align:center; min-width:0; }
   .srow > div + div { border-left:1px solid #2f3034; }
@@ -83,7 +84,7 @@
   .tile.on .hole { fill:var(--t1); }
   .tile.pending { animation:blink .7s infinite; }
   .tile:disabled { opacity:.4; }
-  .tile.hapDown { transform:scale(.98); }
+  .tile.hapDown { transform:scale(.97); opacity:.85; }
   /* 觸覺回饋：iOS 只對「手指真的點到的開關」給震動，所以在 4 個主按鈕上蓋一層透明標籤，指向隱藏的開關 */
   .tiles { position:relative; }
   .hapOv { grid-row:1; z-index:2; border-radius:12px; opacity:0; pointer-events:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
@@ -92,14 +93,15 @@
   #hapSw { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
   /* 其餘所有可點元素：同一招，由程式在每個按鈕上蓋一層透明標籤（版面不變、不擋捲動，只有「點一下」才會觸發） */
   .hapG { position:absolute; z-index:5; margin:0; padding:0; border:0; opacity:0; cursor:pointer; touch-action:manipulation; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
-  .btn.hapDown { transform:scale(.98); }
+  .btn.hapDown { transform:scale(.97); opacity:.85; }
   .credit { font-size:10px; color:var(--t3); margin-top:14px; text-align:center; line-height:1.6; }
   .credit a { color:var(--t2); }
 
   .ctitle { display:flex; justify-content:space-between; align-items:baseline; font-size:15px; font-weight:500; }
   .ctitle span { font-size:12px; color:var(--t2); font-weight:400; }
   .ctitle b { font-weight:600; font-size:20px; color:var(--t1); }
-  .sec { font-size:12px; color:var(--t2); margin:22px 0 0 2px; letter-spacing:.5px; }
+  .sec { font-size:13px; font-weight:500; color:var(--t2); margin:22px 0 8px; }
+  .sec + .list { margin-top:0; }
   input[type=range] { -webkit-appearance:none; appearance:none; width:100%; height:32px; background:transparent; margin-top:6px; }
   input[type=range]::-webkit-slider-runnable-track { height:4px; border-radius:2px; background:linear-gradient(90deg,#e9eaee var(--p,0%),#3a3b40 var(--p,0%)); }
   input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:24px; height:24px; border-radius:50%; background:#fff; margin-top:-10px; box-shadow:0 2px 6px rgba(0,0,0,.5); }
@@ -114,58 +116,69 @@
   input[type=number] { width:72px; text-align:center; }
   input:disabled { opacity:.45; }
 
-  details.adv { background:var(--card); border-radius:12px; margin-top:10px; }
-  details.adv summary { list-style:none; display:flex; align-items:center; gap:10px; padding:14px 16px; font-size:14px; cursor:pointer; }
-  details.adv summary::-webkit-details-marker { display:none; }
-  details.adv summary .ch { margin-left:auto; color:var(--t2); transition:transform .2s; }
-  details.adv[open] summary .ch { transform:rotate(90deg); }
-  .advbody { padding:4px 16px 16px; border-top:1px solid var(--line); }
-  .advbody .tiles .tile { background:var(--card2); height:66px; }
-  .advbody .tiles .tile.on { background:var(--t1); }
-  .advbody .card { background:var(--card2); }
-  .cmdform { display:flex; gap:8px; margin-top:14px; }
-  .cmdform input { flex:1; min-width:0; }
-  .cb { height:40px; padding:0 16px; border-radius:8px; font-size:13px; display:inline-flex; align-items:center; justify-content:center; background:var(--card2); flex:none; }
-  .cb.p { background:var(--t1); color:#000; font-weight:500; }
+  /* 進階（裝置頁第三個子分頁）：版面對照原生 App DeviceAdvanced */
+  #sub-adv .tiles { margin-top:0; }
+  #sub-adv .tiles .tile { background:var(--card2); }
+  #sub-adv .tiles .tile.on { background:var(--t1); color:#000; }
+  #sub-adv .card { margin-top:12px; padding:14px; }
+  #sub-adv .ctitle { font-size:14px; }
+  #sub-adv .ctitle b { font-size:12px; font-weight:400; color:var(--t2); }
+  #sub-adv input[type=range] { margin-top:10px; }
+  .cmdform { display:flex; gap:8px; margin-top:12px; }
+  .cmdform input { flex:1; min-width:0; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .cb { height:40px; padding:0 18px; border-radius:20px; font-size:14.5px; font-weight:500; display:inline-flex; align-items:center; justify-content:center; background:var(--card2); color:var(--t1); flex:none; }
+  .cb.p { background:#fff; color:#000; }
   .cb:disabled { opacity:.45; }
-  .cb.sm { height:32px; padding:0 12px; }
-  .chips { display:flex; gap:8px; margin-top:10px; flex-wrap:wrap; }
-  .hint { font-size:12px; color:var(--t2); line-height:1.7; margin-top:12px; }
+  .cb.sm { height:32px; padding:0 14px; font-size:13px; }
+  .cb:active:not(:disabled) { opacity:.8; }
+  .chips { display:flex; gap:8px; margin-top:10px; }
+  .chp { height:28px; padding:0 9px; border-radius:14px; background:var(--card2); color:#d8d9dd; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; white-space:nowrap; display:inline-flex; align-items:center; justify-content:center; min-width:0; }
+  .chp:disabled { opacity:.45; }
+  .chp:active:not(:disabled) { opacity:.7; }
+  .hint { font-size:11.5px; line-height:1.6; margin-top:14px; color:var(--t3); }
+  .hint .m { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; color:#d8d9dd; margin:6px 0; display:block; }
+  .hint .h { color:var(--t2); }
   code { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; background:var(--card2); color:#d8d9dd; padding:1px 5px; border-radius:4px; }
 
   .log { background:#0d0d0f; border:1px solid var(--line); border-radius:10px; padding:10px 12px; overflow-y:auto;
     font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:12px; line-height:1.6; white-space:pre-wrap; word-break:break-all; color:var(--t2); }
-  .log.mini { height:132px; margin-top:12px; }
-  .log.full { height:calc(100dvh - var(--sat) - var(--sab) - var(--tab-h) - 170px); min-height:240px; margin-top:14px; }
-  .l-tx { color:#fbfcff; } .l-rx { color:var(--ok); } .l-err { color:#ff5a6a; } .l-sys { color:var(--t3); }
+  .log.mini { height:132px; margin-top:14px; }
+  .log.full { height:calc(100dvh - var(--sat) - var(--sab) - var(--tab-h) - 170px); min-height:240px; margin-top:10px; }
+  .log:empty::before { content:'尚無紀錄'; color:var(--t3); }
+  .l-tx { color:#fbfcff; } .l-rx { color:#7ee0ae; } .l-err { color:#ff6b6b; } .l-sys { color:var(--t3); }
 
   /* ===== 裝置 view ===== */
-  .tabs { display:flex; margin-top:16px; border-bottom:1px solid var(--line); }
-  .tabs button { flex:1; text-align:center; font-size:14px; padding:10px 0 11px; color:var(--t2); }
-  .tabs button.a { color:#fff; box-shadow:inset 0 -2px 0 var(--red); }
-  .hero { height:136px; border-radius:12px; margin-top:14px; background:#0a0a0b url(board.jpg) 70% 45%/cover; position:relative; overflow:hidden; }
+  .tabs { display:flex; margin-top:14px; border-bottom:1px solid var(--line); }
+  .tabs button { flex:1; text-align:center; font-size:14px; height:38px; color:var(--t2); }
+  .tabs button.a { color:var(--t1); font-weight:500; box-shadow:inset 0 -2px 0 var(--red); }
+  .subbody { padding-top:14px; padding-bottom:20px; }
+  .hero { height:136px; border-radius:12px; background:#0a0a0b url(board.jpg) 70% 45%/cover; position:relative; overflow:hidden; }
   .hero:after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(0,0,0,.85) 0%,rgba(0,0,0,.35) 60%,rgba(0,0,0,0) 100%); }
-  .hero .tx { position:absolute; left:16px; bottom:16px; right:16px; z-index:2; }
-  .hero .tx .t { font-size:16px; font-weight:500; margin-top:10px; }
-  .hero .tx .s { font-size:12px; color:#c9cacf; margin-top:3px; }
+  .hero .tx { position:absolute; left:16px; top:0; bottom:0; max-width:220px; z-index:2; display:flex; flex-direction:column; justify-content:center; gap:6px; }
+  .hero .tx .t { font-size:16px; font-weight:500; }
+  .hero .tx .s { font-size:12px; color:#c8c9cd; }
   .scan { display:flex; justify-content:space-between; align-items:center; font-size:12px; color:var(--t2); margin-top:18px; }
+  .devname { font-size:12px; color:var(--t3); margin-top:10px; }
   .track { height:3px; background:var(--card2); border-radius:2px; margin-top:8px; position:relative; overflow:hidden; }
   .track i { position:absolute; left:0; width:0; height:100%; background:#fff; border-radius:2px; }
   .track.run i { width:36%; animation:scan 1.3s ease-in-out infinite; }
   .track.done i { width:100%; background:var(--ok); }
   @keyframes scan { 0% { left:-36%; } 100% { left:100%; } }
-  .dev { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:11px 12px; margin-top:10px; }
-  .dev .ic { width:38px; height:38px; border-radius:8px; background:var(--card2); display:flex; align-items:center; justify-content:center; flex:none; }
+  .dev { display:flex; align-items:center; gap:12px; background:var(--card); border-radius:12px; padding:11px 12px; margin-top:14px; }
+  .dev .ic { width:38px; height:38px; border-radius:9px; background:var(--card2); display:flex; align-items:center; justify-content:center; flex:none; }
   .dev .n { flex:1; min-width:0; }
   .dev .a { font-size:15px; font-weight:500; display:flex; align-items:center; gap:6px; }
-  .dev .a em { font-style:normal; font-size:10px; color:#000; background:#fff; border-radius:4px; padding:1px 5px; font-weight:500; }
-  .dev .m { font-size:11.5px; color:var(--t3); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .note { display:flex; gap:10px; margin-top:14px; padding:13px 14px; border-radius:12px; border:1px solid var(--line); font-size:12px; color:var(--t2); line-height:1.7; }
+  .dev .a em { font-style:normal; font-size:10.5px; color:#000; background:#fff; border-radius:9px; padding:2px 7px; font-weight:500; }
+  .dev .m { font-size:12px; color:var(--t2); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .note { display:flex; gap:10px; margin-top:16px; padding:13px 14px; border-radius:12px; border:1px solid var(--line); font-size:12px; color:var(--t2); line-height:1.7; }
   .note svg { flex:none; margin-top:2px; }
   .note.bad { border-color:#5a1a22; background:#1a0b0e; color:#e7b3ba; }
-  .note b { color:var(--t1); font-weight:500; }
-  .steps { margin-top:6px; padding-left:18px; }
-  .steps li { margin-top:6px; }
+  .note b { color:var(--t1); font-weight:600; }
+  .steps { margin-top:8px; padding-left:20px; }
+  .steps li { margin-top:8px; }
+  .steps li::marker { color:var(--t3); }
+  #sub-help { display:flex; flex-direction:column; gap:12px; }
+  #sub-help .note { margin-top:0; }
 
   /* ===== 帳戶 view ===== */
   .list { background:var(--card); border-radius:12px; margin-top:10px; overflow:hidden; }
@@ -182,7 +195,7 @@
 
   /* ===== tab bar ===== */
   .tabbar { position:fixed; left:0; right:0; bottom:0; z-index:20; background:rgba(11,11,12,.96); -webkit-backdrop-filter:blur(16px); backdrop-filter:blur(16px);
-    border-top:1px solid #1d1e21; padding:10px calc(var(--sar) + 4px) calc(var(--sab) + 6px) calc(var(--sal) + 4px); }
+    border-top:.5px solid var(--line); padding:8px calc(var(--sar) + 4px) calc(var(--sab) + 2px) calc(var(--sal) + 4px); }
   .tabbar nav { max-width:520px; margin:0 auto; display:flex; justify-content:space-around; height:calc(var(--tab-h) - 16px); }
   .tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:10.5px; color:#c8c9cd; text-align:center; }
   .tabbar .ico { position:relative; display:block; width:24px; height:24px; }
@@ -197,16 +210,15 @@
   /* ===== 模擬模式 ===== */
   .chiprow { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:10px; }
   .chiprow .chip { margin-top:0; min-width:0; }
-  .simbadge { display:inline-block; margin-left:6px; padding:1px 7px; border-radius:9px; background:#e0a526; color:#000; font-size:11px; font-weight:700; letter-spacing:.5px; }
   .simtog { display:inline-flex; align-items:center; gap:8px; padding:5px 6px 5px 11px; border-radius:16px; background:var(--card2); font-size:12px; color:var(--t1); flex:none; }
   .simtog.on { background:#3a2e0f; color:#ffd36b; outline:1px solid #e0a526; }
   .simtog .switch { width:36px; height:22px; border-radius:11px; }
   .simtog .switch:after { width:16px; height:16px; top:3px; left:3px; }
   .simtog .switch.on { background:#e0a526; }
   .simtog .switch.on:after { transform:translateX(14px); }
-  .simbar { position:sticky; top:0; z-index:60; background:#e0a526; color:#000; font-size:12.5px; font-weight:600; text-align:center; padding:6px 10px; }
-  .simtools { margin-top:10px; padding:10px 12px; border-radius:12px; background:#2a2310; color:#e8c76a; font-size:12px; line-height:1.6; display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
-  .simtools .cb { background:#3a2e0f; color:#ffd36b; border-radius:10px; padding:6px 10px; font-size:12px; }
+  .simbar { position:sticky; top:0; z-index:60; background:#3a2e0f; color:#ffd36b; font-size:12px; font-weight:500; text-align:center; padding:6px 10px; }
+  .simtools { margin-top:10px; color:#ffd36b; font-size:11px; line-height:1.4; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+  .simtools .bs { display:flex; gap:8px; flex:none; }
 
   /* ===== 自訂車牌 ===== */
   .platechip { position:absolute; right:10px; bottom:8px; z-index:3; display:flex; align-items:center; gap:2px; }
@@ -216,10 +228,15 @@
   .platechip canvas { width:46px; height:19.4px; display:block; border-radius:3px; }
   .platechip button.on { background:var(--t1); color:#000; }
   .platechip button.on canvas { outline:1px solid rgba(0,0,0,.25); }
-  .platepv { display:block; width:100%; max-width:320px; aspect-ratio:38/16; margin:2px auto 0; border-radius:8px; }
-  .platerow { display:flex; align-items:center; gap:10px; }
-  .platerow label { color:var(--t2); font-size:13px; white-space:nowrap; }
-  .platerow input[type=text] { flex:1; min-width:0; text-transform:uppercase; letter-spacing:2px; font-weight:600; }
+  .platepv { display:block; width:200px; aspect-ratio:32/15; margin:0 auto; }
+  .platebox { padding:16px 0; }
+  .platebox + .li { border-top:1px solid var(--line); }
+  .li input.plin { width:130px; flex:none; height:28px; padding:0; border:0; background:transparent; text-align:right; text-transform:uppercase; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:16px; }
+  .li input.plin::placeholder { color:var(--t3); }
+  .legal { font-size:11.5px; color:var(--t3); line-height:1.6; padding-bottom:24px; }
+  .failmsg { position:absolute; left:18px; bottom:8px; z-index:3; font-size:11px; color:var(--t3); max-width:50%; }
+  .carposter { position:absolute; left:8px; right:8px; top:40px; height:205px; width:calc(100% - 16px); object-fit:contain; display:block;
+    -webkit-mask-image:radial-gradient(ellipse 72% 64% at 50% 48%,#000 80%,transparent 100%); mask-image:radial-gradient(ellipse 72% 64% at 50% 48%,#000 80%,transparent 100%); }
   .seg { display:flex; background:var(--card2); border-radius:8px; padding:2px; gap:2px; }
   .seg button { flex:1; height:34px; border-radius:6px; font-size:13px; text-align:center; padding:0; color:var(--t2); }
   .seg button.a { background:var(--t1); color:#000; font-weight:600; }
@@ -238,7 +255,6 @@
       <div class="chip">
         <span class="bt"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><b id="chipDot"></b></span>
         <span id="chipText">XIAO-C6 尚未連線</span>
-        <span class="simbadge" id="simBadge" hidden>模擬中</span>
       </div>
       <button class="simtog" id="simToggle" type="button" role="switch" aria-checked="false" aria-label="模擬模式">模擬模式<span class="switch" id="simSw"></span></button>
       </div>
@@ -246,6 +262,8 @@
 
     <div class="carousel" id="carousel">
       <div class="slide"><div class="word">BOXSTER GTS</div><div class="horizon"></div><model-viewer class="car" id="carModel" src="car_anim.glb" ios-src="car.usdz" poster="car_poster.png" alt="Porsche Boxster 3D 模型" camera-controls disable-zoom disable-pan auto-rotate auto-rotate-delay="4000" rotation-per-second="12deg" interaction-prompt="none" camera-orbit="40deg 80deg 6.8m" min-camera-orbit="auto 60deg 6.8m" max-camera-orbit="auto 88deg 6.8m" camera-target="0m 0.35m 0m" field-of-view="28deg" shadow-intensity="1" shadow-softness="0.8" exposure="1.05" environment-image="neutral" ar ar-modes="quick-look webxr scene-viewer" touch-action="pan-y"></model-viewer>
+        <img class="carposter" id="carPoster" src="car_poster.png" alt="Porsche Boxster" hidden>
+        <div class="failmsg" id="failMsg" hidden>3D 模型載入失敗，改顯示 2D 圖片</div>
         <div class="platechip" id="plateChipBox">
           <button type="button" id="plateChip" aria-label="車牌特寫"><canvas id="plateChipCv" width="184" height="77"></canvas><span id="plateChipTx">車牌</span></button>
           <button type="button" class="edit" id="plateEdit" aria-label="編輯車牌"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span id="plateEditTx" hidden>設定車牌</span></button>
@@ -286,7 +304,7 @@
       </div>
       <div class="simtools" id="simTools" hidden>
         <span>模擬中：蓋子 30 秒後自動關閉（同韌體）</span>
-        <span><button class="cb" type="button" data-cmd="CLOSE_FRUNK">關前箱</button> <button class="cb" type="button" data-cmd="CLOSE_TRUNK">關後箱</button></span>
+        <span class="bs"><button class="cb sm" type="button" data-cmd="CLOSE_FRUNK">關前箱</button><button class="cb sm" type="button" data-cmd="CLOSE_TRUNK">關後箱</button></span>
       </div>
       <div class="list">
         <button class="li" id="demoDoor" type="button" role="switch" aria-checked="false">
@@ -300,42 +318,40 @@
   <!-- ===================== 裝置（新增裝置） ===================== -->
   <section class="view" id="view-device" hidden>
     <div class="pad">
-      <div class="upd">藍牙裝置</div>
+      <div class="kick">藍牙裝置</div>
       <h2 id="devTitle">新增裝置</h2>
       <div class="tabs" role="tablist">
         <button class="a" data-sub="sub-connect">連線</button>
         <button data-sub="sub-help">說明</button>
+        <button data-sub="sub-adv">進階</button>
       </div>
 
-      <div id="sub-connect">
+      <div id="sub-connect" class="subbody">
         <div class="hero"><div class="tx">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg>
           <div class="t">連接車上的 XIAO ESP32-C6 模組</div>
           <div class="s">請確認模組已通電、燒好韌體，並在 10 公尺內</div>
         </div></div>
 
-        <div class="scan"><span id="scanText">尚未連線</span><span>裝置名稱 XIAO-C6</span></div>
+        <div class="scan"><span id="scanText">尚未連線</span></div>
         <div class="track" id="track"><i></i></div>
+        <div class="devname" id="devNameTx">裝置名稱　XIAO-C6</div>
 
         <div class="dev" id="devCard" hidden>
-          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M3 14.5c0-1.2.6-1.9 1.8-2.1l2.8-.6 2.3-2.9A2.5 2.5 0 0 1 11.8 8h3.3c.9 0 1.6.4 2.1 1.1l1.9 2.6c1 .3 1.9 1 1.9 2.1V16H3z"/><circle cx="7" cy="16.2" r="1.7" fill="#26272b"/><circle cx="17" cy="16.2" r="1.7" fill="#26272b"/></svg></div>
-          <div class="n"><div class="a"><span id="devName">XIAO-C6</span><em>已連線</em></div><div class="m">ESP32-C6 · BLE GATT</div></div>
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg></div>
+          <div class="n"><div class="a"><span id="devName">XIAO-C6</span><em>已連線</em></div><div class="m" id="devSig">XIAO-C6 BLE</div></div>
           <button class="cb sm" id="btnDisconnect">中斷</button>
         </div>
 
-        <button class="btn primary lg" id="btnConnect">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg>
-          <span id="btnConnectText">搜尋並連線</span>
-        </button>
+        <button class="btn primary lg" id="btnConnect"><span id="btnConnectText">搜尋並連線</span></button>
 
         <div class="note" id="notice">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8c9cd" stroke-width="1.5"><path d="M12 2.5l8 3v6c0 5-3.4 8.8-8 10.5-4.6-1.7-8-5.5-8-10.5v-6z"/></svg>
+          <svg id="noticeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8c9cd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l8 3v6c0 5-3.4 8.8-8 10.5-4.6-1.7-8-5.5-8-10.5v-6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>
           <div id="noticeText">按下「搜尋並連線」後，瀏覽器會跳出附近裝置清單，選擇 <b>XIAO-C6</b> 再按「配對」即可。iPhone 請用 <b>Bluefy</b> 瀏覽器開啟本頁。</div>
         </div>
       </div>
 
-      <div id="sub-help" hidden>
-        <div class="note" style="margin-top:16px">
+      <div id="sub-help" class="subbody" hidden>
+        <div class="note">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8c9cd" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></svg>
           <div>
             <b>怎麼連線</b>
@@ -352,57 +368,8 @@
           <div><b>找不到裝置？</b><br>確認板子已通電、沒有被其他手機或電腦連著；iPhone 的「設定 → Bluefy → 藍牙」要允許。Safari、iOS 版 Chrome 和 Firefox 都不支援 Web Bluetooth。</div>
         </div>
       </div>
-    </div>
-  </section>
 
-  <!-- ===================== 紀錄 ===================== -->
-  <section class="view" id="view-log" hidden>
-    <div class="pad">
-      <div class="upd">通訊紀錄</div>
-      <h2>紀錄</h2>
-      <div class="scan" style="margin-top:14px">
-        <span>→ 送出　← 回覆　✖ 錯誤</span>
-        <button class="cb sm" id="btnClear" type="button">清除</button>
-      </div>
-      <div class="log full" id="log"></div>
-    </div>
-  </section>
-
-  <!-- ===================== 帳戶 / 設定 ===================== -->
-  <section class="view" id="view-account" hidden>
-    <div class="pad">
-      <div class="upd">帳戶與設定</div>
-      <h2>帳戶</h2>
-
-      <div class="sec" id="details">車輛詳情</div>
-      <div class="list">
-        <div class="li"><span class="k">車輛</span><span class="v">Porsche Boxster GTS</span></div>
-        <div class="li"><span class="k">藍牙模組</span><span class="v">Seeed XIAO ESP32-C6 · <span id="accConn">未連線</span></span></div>
-        <div class="li"><span class="k">裝置名稱</span><span class="v"><code>XIAO-C6</code></span></div>
-        <div class="li"><span class="k">運行時間</span><span class="v" id="upVal">—</span></div>
-      </div>
-
-      <div class="sec" id="plateSec">車牌</div>
-      <div class="list">
-        <div class="li" style="display:block;padding:14px 16px 6px"><canvas class="platepv" id="platePv" width="640" height="269" role="img" aria-label="車牌預覽"></canvas></div>
-        <div class="li platerow"><label for="plateInput">車牌號碼</label><input type="text" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
-      </div>
-
-      <div class="sec" id="autoSec">連線</div>
-      <div class="list">
-        <button class="li" id="autoToggle" type="button">
-          <span class="k">靠近車輛時自動連線<small id="autoNote">記住已配對的 XIAO-C6，看到它的廣播就自動連上。</small></span>
-          <span class="switch on" id="autoSwitch"></span>
-        </button>
-      </div>
-
-      <div class="sec">進階 / 開發者</div>
-      <details class="adv" id="adv">
-        <summary>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#c8c9cd" stroke-width="1.5" stroke-linecap="round"><path d="M4 17l6-5-6-5M12 19h8"/></svg>
-          LED、PWM 與自訂指令<span class="ch">›</span>
-        </summary>
-        <div class="advbody">
+      <div id="sub-adv" class="subbody" hidden>
           <div class="tiles">
             <button class="tile ctl" id="tileOn" data-cmd="LED,ON" disabled>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke-width="1.4" stroke-linecap="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.6 10.8c.6.5 1 1.2 1 2V16h5.2v-.2c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg>開燈</button>
@@ -418,9 +385,9 @@
             <div class="ctitle">PWM 亮度 <span><b id="pwmVal">0</b> / 255</span></div>
             <input type="range" id="pwm" min="0" max="255" value="0" class="ctl" disabled aria-label="PWM 數值">
             <div class="pinrow">
-              <label for="pwmPin">輸出腳位（GPIO）</label>
+              <label for="pwmPin">腳位</label>
               <input type="number" id="pwmPin" value="15" min="0" max="23" inputmode="numeric">
-              <span class="sp"></span><span>15 = 板載 LED</span>
+              <span class="sp"></span><span style="color:var(--t3)">15 = 板載 LED</span>
             </div>
           </div>
 
@@ -429,23 +396,63 @@
             <button type="submit" class="cb p ctl" disabled>送出</button>
           </form>
           <div class="chips">
-            <button type="button" class="cb sm ctl" data-cmd="STATUS" disabled>STATUS</button>
-            <button type="button" class="cb sm ctl" data-cmd="HELP" disabled>HELP</button>
-            <button type="button" class="cb sm ctl" data-cmd="CLOSE_FRUNK" disabled>CLOSE_FRUNK</button>
-            <button type="button" class="cb sm ctl" data-cmd="CLOSE_TRUNK" disabled>CLOSE_TRUNK</button>
+            <button type="button" class="chp ctl" data-cmd="STATUS" disabled>STATUS</button>
+            <button type="button" class="chp ctl" data-cmd="HELP" disabled>HELP</button>
+            <button type="button" class="chp ctl" data-cmd="CLOSE_FRUNK" disabled>CLOSE_FRUNK</button>
+            <button type="button" class="chp ctl" data-cmd="CLOSE_TRUNK" disabled>CLOSE_TRUNK</button>
           </div>
-          <p class="hint">
-            指令：<code>LOCK</code> <code>UNLOCK</code> <code>FRUNK</code> <code>TRUNK</code> <code>CLOSE_FRUNK</code> <code>CLOSE_TRUNK</code> <code>LED,ON|OFF|TOGGLE</code> <code>PIN,&lt;腳位&gt;,&lt;0|1&gt;</code> <code>PWM,&lt;腳位&gt;,&lt;0-255&gt;</code> <code>STATUS</code> <code>HELP</code><br>
+          <div class="hint">
+            <span class="h">指令</span>
+            <span class="m">LOCK  UNLOCK  FRUNK  TRUNK  CLOSE_FRUNK  CLOSE_TRUNK  LED,ON|OFF|TOGGLE  PIN,&lt;腳位&gt;,&lt;0|1&gt;  PWM,&lt;腳位&gt;,&lt;0-255&gt;  STATUS  HELP</span>
             可用腳位：D0=0、D1=1、D2=2、D3=21、D4=22、D5=23、D6=16、D7=17、D8=19、D9=20、D10=18、LED=15（D0–D3 已接繼電器，避免用 PIN/PWM 改動）
-          </p>
+          </div>
           <div class="log mini" id="logMini"></div>
-        </div>
-      </details>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 紀錄 ===================== -->
+  <section class="view" id="view-log" hidden>
+    <div class="pad">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+        <div><div class="kick">通訊紀錄</div><h2>紀錄</h2></div>
+        <button class="cb sm" id="btnClear" type="button">清除</button>
+      </div>
+      <div class="scan" style="margin-top:10px;justify-content:flex-start;font-size:11.5px;color:var(--t3)"><span>→ 送出　← 回覆　✖ 錯誤</span></div>
+      <div class="log full" id="log"></div>
+    </div>
+  </section>
+
+  <!-- ===================== 帳戶 / 設定 ===================== -->
+  <section class="view" id="view-account" hidden>
+    <div class="pad">
+      <div class="kick">我的車</div>
+      <h2>帳戶</h2>
+
+      <div class="sec" id="details">車輛詳情</div>
+      <div class="list">
+        <div class="li"><span class="k">車輛</span><span class="v">Porsche Boxster GTS</span></div>
+        <div class="li"><span class="k">藍牙模組</span><span class="v">Seeed XIAO ESP32-C6 · <span id="accConn">未連線</span></span></div>
+        <div class="li"><span class="k">裝置名稱</span><span class="v"><code>XIAO-C6</code></span></div>
+        <div class="li"><span class="k">運行時間</span><span class="v" id="upVal">—</span></div>
+      </div>
+
+      <div class="sec" id="plateSec">車牌</div>
+      <div class="list">
+        <div class="platebox"><canvas class="platepv" id="platePv" width="640" height="300" role="img" aria-label="車牌預覽"></canvas></div>
+        <div class="li"><label class="k" for="plateInput">車牌號碼<small>最多 8 碼，英文與數字，會顯示在 3D 車的車牌上。</small></label><input type="text" class="plin" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
+      </div>
+
+      <div class="sec" id="autoSec">連線</div>
+      <div class="list">
+        <button class="li" id="autoToggle" type="button">
+          <span class="k">靠近車輛時自動連線<small id="autoNote">記住已配對的 XIAO-C6，看到它的廣播就自動連上。</small></span>
+          <span class="switch on" id="autoSwitch"></span>
+        </button>
+      </div>
 
       <div class="sec">素材授權</div>
-      <div class="list">
-        <div class="li"><span class="k"><small>車輛 3D 模型："2015 Porsche Boxster GTS (718)" by Ddiaz Design · Sketchfab · CC BY-NC-SA 4.0（已修改：白色車漆、前箱／後箱分件開啟動畫）。<br>模組示意圖為設計稿素材，並非 XIAO ESP32-C6 實物。</small></span></div>
-      </div>
+      <p class="legal">車輛 3D 模型：「2015 Porsche Boxster GTS (718)」by Ddiaz Design · Sketchfab · CC BY-NC-SA 4.0（已修改：白色車漆、前箱／後箱分件開啟動畫）。模組示意圖為設計稿素材，並非 XIAO ESP32-C6 實物。</p>
     </div>
   </section>
 </div>
@@ -501,11 +508,23 @@ function showView(name, anchor) {
 document.querySelectorAll('.tabbar button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('click', () => {
   document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('a', x === b));
-  ['sub-connect', 'sub-help'].forEach((id) => ($(id).hidden = id !== b.dataset.sub));
+  ['sub-connect', 'sub-help', 'sub-adv'].forEach((id) => ($(id).hidden = id !== b.dataset.sub));
 }));
 
 // ===== 輪播（目前只剩 3D 車一張）=====
 const carousel = $('carousel');
+// 3D 載入失敗（模型檔讀不到、或 model-viewer 程式庫載不進來）→ 改顯示 car_poster.png，跟原生 App 一樣
+let carFailed = false;
+function car3dFail() {
+  if (carFailed) return;
+  carFailed = true;
+  $('carModel').style.display = 'none';
+  $('carPoster').hidden = false;
+  $('failMsg').hidden = false;
+}
+$('carModel').addEventListener('error', car3dFail);
+if (window.__mvFail) car3dFail();
+document.querySelector('script[src*="model-viewer"]').addEventListener('error', car3dFail);
 
 // ===== 紀錄 =====
 function addLine(el, text, type, max) {
@@ -539,13 +558,12 @@ function setState(state, text) {
   $('track').className = 'track' + (busy ? ' run' : connected ? ' done' : '');
 
   $('btnConnect').disabled = state !== 'idle' && !simMode;   // 模擬中仍可按，會先關閉模擬再真的連線
-  $('btnConnectText').textContent = busy ? '連線中…' : connected && !simMode ? '已連線' : '搜尋並連線';
+  $('btnConnectText').textContent = busy ? '搜尋中…' : connected && !simMode ? '已連線' : connected ? '重新搜尋並連線' : '搜尋並連線';
   $('devCard').hidden = !connected;
   $('devName').textContent = name;
-  $('devTitle').textContent = connected ? '我的裝置' : '新增裝置';
+  $('devNameTx').hidden = connected;
   $('btnDisconnect').disabled = !connected;
   $('devCard').querySelector('em').textContent = simMode ? '模擬中' : '已連線';
-  $('btnDisconnect').textContent = simMode ? '結束模擬' : '中斷';
 
   // 未連線時主按鈕變成白色「搜尋並連線」，連線後恢復設計稿的「車輛詳情」
   const main = $('btnMain');
@@ -591,6 +609,7 @@ function renderSignal() {
     $('sigVal').textContent = simMode ? SIM_NAME : (device && device.name) || DEVICE_NAME; $('sigUnit').textContent = 'BLE';
     prog.firstElementChild.style.width = connected ? '100%' : '';
   }
+  $('devSig').textContent = $('sigVal').textContent + ' ' + $('sigUnit').textContent;
 }
 
 function renderStatus() {
@@ -640,6 +659,7 @@ const HOME_FOV = '28deg';
 let yawRaf = 0, camCheckTimer = 0;
 function yawHome(animate) {
   cancelAnimationFrame(yawRaf); yawRaf = 0;
+  if (carFailed) return;
   if (typeof carMv.resetTurntableRotation !== 'function') return;
   let y0 = carMv.turntableRotation || 0;
   y0 = ((y0 + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI;   // 走最短的那一邊
@@ -669,6 +689,7 @@ function camStop() { cancelAnimationFrame(camAnimRaf); camAnimRaf = 0; }
 const camUserTouch = () => { if (camAnimRaf) { camStop(); clearTimeout(camCheckTimer); } };
 ['pointerdown', 'touchstart', 'wheel'].forEach((ev) => carMv.addEventListener(ev, camUserTouch, { passive: true }));
 function camGlide(v) {
+  if (carFailed || typeof carMv.getCameraOrbit !== 'function') return;
   const m = /^(-?[\d.]+)deg (-?[\d.]+)deg (-?[\d.]+)m$/.exec(v.orbit);
   if (!m) { carMv.cameraTarget = v.target; carMv.fieldOfView = v.fov; carMv.cameraOrbit = v.orbit; return; }
   const o = carMv.getCameraOrbit(), g = carMv.getCameraTarget(), f0 = carMv.getFieldOfView();
@@ -688,6 +709,7 @@ function camGlide(v) {
 }
 function camGo(v, smooth) {
   camStop();
+  if (carFailed || typeof carMv.getCameraOrbit !== 'function') return;
   carMv.autoRotate = false;            // 先關自動旋轉，再設鏡頭
   // 預設視角不能縮放（半徑固定 6.8 m）；車牌特寫需要靠近，暫時放寬最小半徑，離開特寫就還原
   carMv.minCameraOrbit = parseFloat(v.orbit.split(' ')[2]) < 6 ? 'auto 60deg 1.2m' : 'auto 60deg 6.8m';
@@ -945,7 +967,7 @@ function paintPlateTexture() {
   });
 }
 function renderPlateUI() {
-  drawPlate($('platePv'), plateText, plateStyle, true, 'f');
+  drawPlate($('platePv'), plateText, plateStyle, true, 'r');
   drawPlate($('plateChipCv'), plateText, plateStyle, false, 'f', 0.12);
   $('plateChip').hidden = !plateText;
   $('plateChipTx').textContent = plateView === 1 ? '前車牌特寫' : plateView === 2 ? '後車牌特寫' : plateText;
@@ -1039,6 +1061,7 @@ function checkSupport() {
   else if (!navigator.bluetooth) msg = '此瀏覽器不支援 Web Bluetooth。iPhone 請改用 Bluefy，電腦或 Android 請用 Chrome / Edge。';
   if (msg) {
     $('notice').classList.add('bad');
+    $('noticeIcon').innerHTML = '<path d="M12 2.5l8 3v6c0 5-3.4 8.8-8 10.5-4.6-1.7-8-5.5-8-10.5v-6z"/><path d="M12 8v4.5M12 15.5h.01"/>';
     $('noticeText').textContent = msg;
     log(msg, 'err');
     return false;
@@ -1293,7 +1316,6 @@ function simTick() {
 }
 function renderSim() {
   $('simBar').hidden = !simMode;
-  $('simBadge').hidden = !simMode;
   $('simTools').hidden = !simMode;
   $('simToggle').classList.toggle('on', simMode);
   $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
@@ -1336,7 +1358,7 @@ $('btnDisconnect').addEventListener('click', disconnect);
 $('btnClear').addEventListener('click', () => { $('log').innerHTML = ''; $('logMini').innerHTML = ''; });
 document.querySelectorAll('button[data-cmd]').forEach((b) =>
   b.addEventListener('click', () => {
-    if (b.classList.contains('tile') && !b.closest('.advbody')) {
+    if (b.classList.contains('tile') && !b.closest('#sub-adv')) {
       b.classList.add('pending');
       setTimeout(() => b.classList.remove('pending'), 2000);
     }
