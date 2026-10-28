@@ -96,10 +96,13 @@
   .tile.hapDown { transform:scale(.98); }
   /* 觸覺回饋：iOS 只對「手指真的點到的開關」給震動，所以在 4 個主按鈕上蓋一層透明標籤，指向隱藏的開關 */
   .tiles { position:relative; }
-  .hapOv { grid-row:1; z-index:2; border-radius:12px; opacity:0; pointer-events:none; -webkit-tap-highlight-color:transparent; }
+  .hapOv { grid-row:1; z-index:2; border-radius:12px; opacity:0; pointer-events:none; touch-action:manipulation; -webkit-tap-highlight-color:transparent; }
   .hapOv.act { pointer-events:auto; }
   #tUnlock { grid-area:1/1; } #tLock { grid-area:1/2; } #tFrunk { grid-area:1/3; } #tTrunk { grid-area:1/4; }
   #hapSw { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
+  /* 其餘所有可點元素：同一招，由程式在每個按鈕上蓋一層透明標籤（版面不變、不擋捲動，只有「點一下」才會觸發） */
+  .hapG { position:absolute; z-index:5; margin:0; padding:0; border:0; opacity:0; cursor:pointer; touch-action:manipulation; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  .btn.hapDown { transform:scale(.98); }
   .credit { font-size:10px; color:var(--t3); margin-top:14px; text-align:center; line-height:1.6; }
   .credit a { color:var(--t2); }
 
@@ -1412,6 +1415,79 @@ document.querySelectorAll('.hapOv').forEach((o) => {
   const up = () => { const b = $(o.dataset.for); if (b) b.classList.remove('hapDown'); };
   o.addEventListener('touchend', up); o.addEventListener('touchcancel', up);
 });
+// ===== 全站觸覺回饋（其餘所有按鈕）=====
+// 做法與上面主按鈕相同：每個可點元素上方蓋一個透明標籤（for → 隱藏開關）。標籤放在該元素的 offsetParent 裡並跟著版面更新位置，
+// 點到標籤時轉發 click 給真正的按鈕（原本的處理函式照舊只觸發一次）；不可用／被隱藏／被裁切的按鈕，標籤會自動隱藏，
+// 所以停用的按鈕仍然沒反應；標籤只吃「點一下」，上下左右滑動照常捲動頁面與輪播。
+(() => {
+  const sw = $('hapSw');
+  if (!sw) return;
+  const done = new Set([...document.querySelectorAll('.hapOv')].map((o) => o.dataset.for));
+  const items = [];
+  document.querySelectorAll('button, summary').forEach((el) => {
+    if (done.has(el.id) || el.closest('.hapOv')) return;
+    const o = document.createElement('label');
+    o.className = 'hapG'; o.htmlFor = 'hapSw'; o.hidden = true; o.setAttribute('aria-hidden', 'true');
+    o._t = el; o._s = ''; o._h = true;
+    document.body.appendChild(o);
+    items.push([el, o]);
+  });
+  const bodyStatic = () => getComputedStyle(document.body).position === 'static';
+  const hide = (o) => { if (!o._h) { o.hidden = true; o._h = true; } };
+  function place(el, o) {
+    if (el.disabled || el.closest('[hidden]') || (el.checkVisibility && !el.checkVisibility({ checkVisibilityCSS: true }))) return hide(o);
+    const r = el.getBoundingClientRect();
+    let L = r.left, T = r.top, R = r.right, B = r.bottom;
+    for (let a = el.parentElement; a && a !== document.documentElement; a = a.parentElement) {
+      const cs = getComputedStyle(a);
+      if (cs.overflowX !== 'visible' || cs.overflowY !== 'visible') {
+        const q = a.getBoundingClientRect();
+        if (cs.overflowX !== 'visible') { L = Math.max(L, q.left); R = Math.min(R, q.right); }
+        if (cs.overflowY !== 'visible') { T = Math.max(T, q.top); B = Math.min(B, q.bottom); }
+      }
+    }
+    if (R - L < 2 || B - T < 2) return hide(o);
+    let p = el.offsetParent, x, y;
+    if (!p || p === document.body || ['BUTTON', 'SUMMARY', 'A'].includes(p.tagName)) {
+      if (!bodyStatic() && p === document.body) { const q = p.getBoundingClientRect(); x = L - q.left - p.clientLeft + p.scrollLeft; y = T - q.top - p.clientTop + p.scrollTop; }
+      else { p = document.body; x = L + scrollX; y = T + scrollY; }
+    } else {
+      const q = p.getBoundingClientRect();
+      x = L - q.left - p.clientLeft + p.scrollLeft; y = T - q.top - p.clientTop + p.scrollTop;
+    }
+    if (o.parentNode !== p) p.appendChild(o);
+    const st = `left:${x.toFixed(1)}px;top:${y.toFixed(1)}px;width:${(R - L).toFixed(1)}px;height:${(B - T).toFixed(1)}px;`;
+    if (st !== o._s) { o.style.cssText = st; o._s = st; }
+    if (o._h) { o.hidden = false; o._h = false; }
+  }
+  function sync() { for (const [el, o] of items) place(el, o); }
+  let q = false;
+  const sched = () => { if (q) return; q = true; requestAnimationFrame(() => { q = false; sync(); }); };
+  new MutationObserver((ms) => {
+    if (ms.some((m) => !(m.target.classList && m.target.classList.contains('hapG')))) sched();
+  }).observe(document.body, { subtree: true, childList: true, attributes: true, characterData: true });
+  addEventListener('resize', sched); addEventListener('orientationchange', sched); addEventListener('load', sched);
+  document.addEventListener('scroll', (e) => { if (e.target !== document) sched(); }, { capture: true, passive: true });
+  ['transitionend', 'animationend', 'toggle'].forEach((n) => document.addEventListener(n, sched, true));
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(sched);
+  setInterval(() => { if (!document.hidden) sync(); }, 600);
+  sync();
+
+  document.addEventListener('click', (e) => {
+    const o = e.target;
+    if (!(o instanceof Element) || !o.classList.contains('hapG')) return;
+    if ('vibrate' in navigator) { try { navigator.vibrate(30); } catch (_) {} }
+    const t = o._t;
+    if (t && !t.disabled) t.click();
+  });
+  const press = (on) => (e) => {
+    const o = e.target;
+    if (!(o instanceof Element) || !o.classList.contains('hapG')) return;
+    if (o._t && o._t.classList.contains('btn')) o._t.classList.toggle('hapDown', on);
+  };
+  document.addEventListener('touchstart', press(true), { passive: true });
+  document.addEventListener('touchend', press(false)); document.addEventListener('touchcancel', press(false));
+})();
 $('autoRow').addEventListener('click', () => showView('account', 'autoSec'));
 $('autoToggle').addEventListener('click', () => {
   autoConnect = !autoConnect;
