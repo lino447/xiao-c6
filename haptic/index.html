@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>震動測試</title>
+<style>
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#111;color:#eee;font-family:-apple-system,sans-serif;text-align:center;padding:20px}
+button,label.b{font-size:20px;padding:18px 28px;border-radius:14px;border:0;background:#3a7afe;color:#fff;min-width:240px;display:block;-webkit-user-select:none;user-select:none}
+input[switch]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+#info{font-size:14px;color:#aaa;max-width:320px;line-height:1.6}
+#res{font-size:15px;color:#8f8}
+</style></head><body>
+<h2>震動測試</h2>
+<button id="b1">1. 標準震動（navigator.vibrate）</button>
+<label class="b" id="b2" for="sw">2. iOS 開關震動</label>
+<input type="checkbox" id="sw" switch>
+<div id="res"></div>
+<div id="info"></div>
+<script>
+const $=id=>document.getElementById(id);
+$('info').textContent='瀏覽器：'+navigator.userAgent.slice(0,90)+'｜navigator.vibrate：'+('vibrate' in navigator?'有':'沒有')+'。按按鈕時請用手指實際按，看手機有沒有震動。';
+$('b1').onclick=()=>{
+  if('vibrate' in navigator){const ok=navigator.vibrate(60);$('res').textContent='已呼叫 vibrate，回傳 '+ok;}
+  else $('res').textContent='此瀏覽器沒有 navigator.vibrate';
+};
+$('sw').addEventListener('change',()=>{$('res').textContent='已觸發開關元件（有震動嗎？）';});
+</script></body></html>
