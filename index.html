@@ -50,16 +50,6 @@
     --poster-color:transparent; --progress-bar-color:rgba(255,255,255,.35); --progress-bar-height:2px;
     -webkit-mask-image:radial-gradient(ellipse 72% 64% at 50% 48%,#000 80%,transparent 100%);
             mask-image:radial-gradient(ellipse 72% 64% at 50% 48%,#000 80%,transparent 100%); }
-  .boardpic { position:absolute; left:18px; right:18px; top:52px; height:180px; border-radius:12px; background:url(board.jpg) 72% 45%/cover;
-    -webkit-mask-image:radial-gradient(ellipse 75% 70% at 60% 50%,#000 60%,transparent 100%);
-            mask-image:radial-gradient(ellipse 75% 70% at 60% 50%,#000 60%,transparent 100%); }
-  .wiring { position:absolute; left:18px; right:18px; top:58px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
-  .wiring div { background:var(--card); border-radius:10px; padding:12px; font-size:12px; color:var(--t2); }
-  .wiring b { display:block; font-size:18px; color:var(--t1); font-weight:600; margin-bottom:2px; }
-  .wiring p { grid-column:1/3; font-size:11px; color:var(--t3); text-align:center; }
-  .dots { display:flex; gap:6px; justify-content:center; margin-top:2px; }
-  .dots button { width:5px; height:5px; border-radius:50%; background:#4a4b50; padding:0; }
-  .dots button.a { background:#fff; }
 
   /* ===== common ===== */
   .btn { width:100%; height:42px; border-radius:8px; background:var(--card); display:flex; align-items:center; justify-content:center; gap:8px; font-size:14px; margin-top:10px; text-align:center; }
@@ -260,15 +250,7 @@
           <button type="button" id="plateChip" aria-label="車牌特寫"><canvas id="plateChipCv" width="184" height="77"></canvas><span id="plateChipTx">車牌</span></button>
           <button type="button" class="edit" id="plateEdit" aria-label="編輯車牌"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span id="plateEditTx" hidden>設定車牌</span></button>
         </div></div>
-      <div class="slide"><div class="word">XIAO ESP32-C6</div><div class="boardpic" role="img" aria-label="車上的藍牙控制模組示意圖"></div></div>
-      <div class="slide"><div class="word">WIRING</div>
-        <div class="wiring" id="wiring">
-          <div><b>D0</b>解鎖</div><div><b>D1</b>上鎖</div><div><b>D2</b>開前箱</div><div><b>D3</b>開後箱</div>
-          <p>繼電器脈衝 500 ms · 板載 LED 每次動作閃一下</p>
-        </div>
-      </div>
     </div>
-    <div class="dots" id="dots"><button class="a" aria-label="第 1 張"></button><button aria-label="第 2 張"></button><button aria-label="第 3 張"></button></div>
 
     <div class="pad">
       <button class="btn" id="btnMain">車輛詳情</button>
@@ -404,17 +386,6 @@
       <div class="list">
         <div class="li" style="display:block;padding:14px 16px 6px"><canvas class="platepv" id="platePv" width="640" height="269" role="img" aria-label="車牌預覽"></canvas></div>
         <div class="li platerow"><label for="plateInput">車牌號碼</label><input type="text" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
-        <div class="li"><span class="k">車牌樣式</span><span class="seg" id="plateStyle" style="width:150px"><button type="button" data-style="white" class="a">白牌</button><button type="button" data-style="yellow">黃牌</button></span></div>
-        <div class="li"><span class="k"><small>最多 8 個字元，可用英文字母、數字和連字號（-）。輸入後馬上畫在 3D 車的前、後車牌上，並存在這支手機。留空就不顯示車牌。車牌只是畫面效果，不影響藍牙控制。在「車輛」分頁按車牌小標籤可看特寫。</small></span></div>
-      </div>
-
-      <div class="sec">接線（繼電器腳位）</div>
-      <div class="list">
-        <div class="li"><span class="k">解鎖 <code>UNLOCK</code></span><span class="v">D0 · GPIO0</span></div>
-        <div class="li"><span class="k">上鎖 <code>LOCK</code></span><span class="v">D1 · GPIO1</span></div>
-        <div class="li"><span class="k">開前箱 <code>FRUNK</code></span><span class="v">D2 · GPIO2</span></div>
-        <div class="li"><span class="k">開後箱 <code>TRUNK</code></span><span class="v">D3 · GPIO21</span></div>
-        <div class="li"><span class="k"><small>每個指令送出約 500 ms 高電位脈衝（韌體 <code>RELAY_PULSE_MS</code>）。前箱／後箱沒有感測器，開啟 30 秒後自動視為已關閉（<code>LID_AUTO_CLOSE_SEC</code>）。腳位可在 .ino 開頭修改。</small></span></div>
       </div>
 
       <div class="sec" id="autoSec">連線</div>
@@ -533,14 +504,8 @@ document.querySelectorAll('.tabs button').forEach((b) => b.addEventListener('cli
   ['sub-connect', 'sub-help'].forEach((id) => ($(id).hidden = id !== b.dataset.sub));
 }));
 
-// ===== 輪播圓點 =====
+// ===== 輪播（目前只剩 3D 車一張）=====
 const carousel = $('carousel');
-const dots = [...$('dots').children];
-carousel.addEventListener('scroll', () => {
-  const i = Math.round(carousel.scrollLeft / carousel.clientWidth);
-  dots.forEach((d, k) => d.classList.toggle('a', k === i));
-}, { passive: true });
-dots.forEach((d, k) => d.addEventListener('click', () => carousel.scrollTo({ left: k * carousel.clientWidth, behavior: 'smooth' })));
 
 // ===== 紀錄 =====
 function addLine(el, text, type, max) {
@@ -836,7 +801,7 @@ const PLATE_STYLES = {
 const PLATE_PLACEHOLDER = 'ABC-1234';
 const plateClean = (t) => String(t || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 8);
 let plateText = plateClean(localStorage.getItem('plateText'));
-let plateStyle = PLATE_STYLES[localStorage.getItem('plateStyle')] ? localStorage.getItem('plateStyle') : 'white';
+let plateStyle = 'white';   // 車牌樣式的切換已從介面移除，固定白牌（舊的 localStorage 值一律忽略）
 // 前牌 f：38 x 16 cm（新式 3-4 碼），後牌 r：32 x 15 cm（維持上線版）。各自一張貼圖、一個材質（LicensePlate / LicensePlateRear）
 const PLATE_DIM = { f: { h: 431, size: 280 }, r: { h: 480, size: 300 } };
 const plateTexs = { f: null, r: null };                        // { tex, cv }
@@ -985,7 +950,6 @@ function renderPlateUI() {
   $('plateChip').hidden = !plateText;
   $('plateChipTx').textContent = plateView === 1 ? '前車牌特寫' : plateView === 2 ? '後車牌特寫' : plateText;
   $('plateEditTx').hidden = !!plateText;
-  document.querySelectorAll('#plateStyle button').forEach((b) => b.classList.toggle('a', b.dataset.style === plateStyle));
 }
 function setPlate(text, style, persist) {
   plateText = plateClean(text); if (style) plateStyle = style;
@@ -1035,7 +999,6 @@ plateInput.addEventListener('input', (e) => {
   setPlate(c, null, true);
 });
 plateInput.addEventListener('compositionend', () => plateInput.dispatchEvent(new Event('input')));
-document.querySelectorAll('#plateStyle button').forEach((b) => b.addEventListener('click', () => setPlate(plateText, b.dataset.style, true)));
 // 車輛頁的小標籤：點一下依序「前車牌特寫 → 後車牌特寫 → 回原本視角」；鉛筆去帳戶設定車牌
 const PLATE_VIEWS = {
   1: { orbit: '0deg 80deg 1.6m', target: '0m 0.41m 2.1m', fov: HOME_FOV },
