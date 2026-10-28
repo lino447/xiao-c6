@@ -93,6 +93,13 @@
   .tile.on .hole { fill:var(--t1); }
   .tile.pending { animation:blink .7s infinite; }
   .tile:disabled { opacity:.4; }
+  .tile.hapDown { transform:scale(.98); }
+  /* 觸覺回饋：iOS 只對「手指真的點到的開關」給震動，所以在 4 個主按鈕上蓋一層透明標籤，指向隱藏的開關 */
+  .tiles { position:relative; }
+  .hapOv { grid-row:1; z-index:2; border-radius:12px; opacity:0; pointer-events:none; -webkit-tap-highlight-color:transparent; }
+  .hapOv.act { pointer-events:auto; }
+  #tUnlock { grid-area:1/1; } #tLock { grid-area:1/2; } #tFrunk { grid-area:1/3; } #tTrunk { grid-area:1/4; }
+  #hapSw { position:absolute; opacity:0; pointer-events:none; width:1px; height:1px; }
   .credit { font-size:10px; color:var(--t3); margin-top:14px; text-align:center; line-height:1.6; }
   .credit a { color:var(--t2); }
 
@@ -286,6 +293,11 @@
           <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke-width="1.4" stroke-linejoin="round"><path d="M2 17h22l-1-4-4-1-3-4H9L6 12H3z"/><path d="M6 12L3.5 6.5" stroke-width="1.6"/><circle class="hole" cx="7" cy="17.5" r="2"/><circle class="hole" cx="19" cy="17.5" r="2"/></svg>開前箱</button>
         <button class="tile ctl" id="tTrunk" data-cmd="TRUNK" disabled>
           <svg width="26" height="24" viewBox="0 0 26 24" fill="none" stroke-width="1.4" stroke-linejoin="round"><path d="M24 17H2l1-4 4-1 3-4h7l3 4h3z"/><path d="M20 12l2.5-5.5" stroke-width="1.6"/><circle class="hole" cx="19" cy="17.5" r="2"/><circle class="hole" cx="7" cy="17.5" r="2"/></svg>開後箱</button>
+        <input type="checkbox" id="hapSw" switch aria-hidden="true" tabindex="-1">
+        <label class="hapOv" for="hapSw" data-for="tUnlock" style="grid-column:1" aria-hidden="true"></label>
+        <label class="hapOv" for="hapSw" data-for="tLock" style="grid-column:2" aria-hidden="true"></label>
+        <label class="hapOv" for="hapSw" data-for="tFrunk" style="grid-column:3" aria-hidden="true"></label>
+        <label class="hapOv" for="hapSw" data-for="tTrunk" style="grid-column:4" aria-hidden="true"></label>
       </div>
       <div class="simtools" id="simTools" hidden>
         <span>模擬中：蓋子 30 秒後自動關閉（同韌體）</span>
@@ -592,6 +604,7 @@ function setState(state, text) {
   main.textContent = connected ? '車輛詳情' : busy ? '連線中…' : '搜尋並連線';
 
   document.querySelectorAll('.ctl').forEach((b) => (b.disabled = !connected));
+  document.querySelectorAll('.hapOv').forEach((o) => o.classList.toggle('act', connected));
   if (!connected) {
     Object.assign(dev, { led: null, lock: null, frunk: null, trunk: null, rssi: null });
     document.querySelectorAll('.tile.pending').forEach((t) => t.classList.remove('pending'));
@@ -1387,6 +1400,18 @@ document.querySelectorAll('button[data-cmd]').forEach((b) =>
     }
     send(b.dataset.cmd);
   }));
+// 主按鈕觸覺回饋：手指點到透明標籤 → iOS 對隱藏開關給震動（Bluefy/Safari），同時照常送出指令；Android 用標準震動
+document.querySelectorAll('.hapOv').forEach((o) => {
+  o.addEventListener('click', (e) => {
+    if (e.target !== o) return;
+    if ('vibrate' in navigator) { try { navigator.vibrate(30); } catch (_) {} }
+    const b = $(o.dataset.for);
+    if (b && !b.disabled) b.click();
+  });
+  o.addEventListener('touchstart', () => { const b = $(o.dataset.for); if (b) b.classList.add('hapDown'); }, { passive: true });
+  const up = () => { const b = $(o.dataset.for); if (b) b.classList.remove('hapDown'); };
+  o.addEventListener('touchend', up); o.addEventListener('touchcancel', up);
+});
 $('autoRow').addEventListener('click', () => showView('account', 'autoSec'));
 $('autoToggle').addEventListener('click', () => {
   autoConnect = !autoConnect;
