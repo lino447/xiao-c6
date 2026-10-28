@@ -4,8 +4,9 @@
 <title>震動測試</title>
 <style>
 body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#111;color:#eee;font-family:-apple-system,sans-serif;text-align:center;padding:20px}
-button{font-size:19px;padding:16px 26px;border-radius:14px;border:0;background:#3a7afe;color:#fff;min-width:260px;-webkit-user-select:none;user-select:none}
-button.s{background:#2d9d6b}
+button,label.b{font-size:19px;padding:16px 26px;border-radius:14px;border:0;background:#3a7afe;color:#fff;min-width:260px;display:block;box-sizing:border-box;-webkit-user-select:none;user-select:none}
+label.s{background:#2d9d6b}
+label.x{background:#b8641f}
 input[switch]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
 h2{margin:0 0 6px}
 #info{font-size:13px;color:#aaa;max-width:330px;line-height:1.6}
@@ -13,21 +14,30 @@ h2{margin:0 0 6px}
 </style></head><body>
 <h2>震動測試</h2>
 <button id="std">標準震動（navigator.vibrate）</button>
-<button class="s" data-n="1">iOS 震動 ×1</button>
-<button class="s" data-n="2">iOS 震動 ×2</button>
-<button class="s" data-n="3">iOS 震動 ×3</button>
-<button class="s" data-n="5">iOS 震動 ×5</button>
-<input type="checkbox" id="sw" switch>
+<label class="b s" for="sw1">A. iOS 震動（單次，第一版做法）</label>
+<label class="b x" for="sw2" data-extra="2">B. 手指點到後再補 1 次</label>
+<label class="b x" for="sw3" data-extra="3">C. 手指點到後再補 2 次</label>
+<label class="b x" for="sw4" data-extra="5">D. 手指點到後再補 4 次</label>
+<input type="checkbox" id="sw1" switch>
+<input type="checkbox" id="sw2" switch>
+<input type="checkbox" id="sw3" switch>
+<input type="checkbox" id="sw4" switch>
 <div id="res"></div>
 <div id="info"></div>
 <script>
 const $=id=>document.getElementById(id);
-const sw=$('sw');
-$('info').textContent='navigator.vibrate：'+('vibrate' in navigator?'有':'沒有')+'。每次間隔 45 毫秒連續觸發，請用手指按按鈕，比較哪個最明顯。';
+$('info').textContent='navigator.vibrate：'+('vibrate' in navigator?'有':'沒有')+'。A 是最穩的做法；B、C、D 是實驗，不一定每次都有額外震動。請告訴我哪個最明顯。';
 $('std').onclick=()=>{ if('vibrate' in navigator){navigator.vibrate(60);$('res').textContent='已呼叫 vibrate';} else $('res').textContent='此瀏覽器沒有 navigator.vibrate'; };
-function buzz(n){
-  let i=0;
-  (function go(){ sw.click(); if(++i<n) setTimeout(go,45); })();
-}
-document.querySelectorAll('button.s').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;buzz(n);$('res').textContent='已觸發 ×'+n;});
+$('sw1').addEventListener('change',()=>{$('res').textContent='A 已觸發';});
+[['sw2',2],['sw3',3],['sw4',5]].forEach(([id,n])=>{
+  const el=$(id);
+  let busy=false;
+  el.addEventListener('change',()=>{
+    if(busy) return;           // 程式自己補的那幾次不再連鎖觸發
+    busy=true;
+    let i=1;
+    (function go(){ if(i++>=n){ busy=false; return; } el.click(); setTimeout(go,45); })();
+    $('res').textContent='已觸發，共 '+n+' 次（含手指那次）';
+  });
+});
 </script></body></html>
