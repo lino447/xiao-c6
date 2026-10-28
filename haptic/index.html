@@ -3,24 +3,31 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
 <title>震動測試</title>
 <style>
-body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#111;color:#eee;font-family:-apple-system,sans-serif;text-align:center;padding:20px}
-button,label.b{font-size:20px;padding:18px 28px;border-radius:14px;border:0;background:#3a7afe;color:#fff;min-width:240px;display:block;-webkit-user-select:none;user-select:none}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#111;color:#eee;font-family:-apple-system,sans-serif;text-align:center;padding:20px}
+button{font-size:19px;padding:16px 26px;border-radius:14px;border:0;background:#3a7afe;color:#fff;min-width:260px;-webkit-user-select:none;user-select:none}
+button.s{background:#2d9d6b}
 input[switch]{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
-#info{font-size:14px;color:#aaa;max-width:320px;line-height:1.6}
-#res{font-size:15px;color:#8f8}
+h2{margin:0 0 6px}
+#info{font-size:13px;color:#aaa;max-width:330px;line-height:1.6}
+#res{font-size:15px;color:#8f8;min-height:22px}
 </style></head><body>
 <h2>震動測試</h2>
-<button id="b1">1. 標準震動（navigator.vibrate）</button>
-<label class="b" id="b2" for="sw">2. iOS 開關震動</label>
+<button id="std">標準震動（navigator.vibrate）</button>
+<button class="s" data-n="1">iOS 震動 ×1</button>
+<button class="s" data-n="2">iOS 震動 ×2</button>
+<button class="s" data-n="3">iOS 震動 ×3</button>
+<button class="s" data-n="5">iOS 震動 ×5</button>
 <input type="checkbox" id="sw" switch>
 <div id="res"></div>
 <div id="info"></div>
 <script>
 const $=id=>document.getElementById(id);
-$('info').textContent='瀏覽器：'+navigator.userAgent.slice(0,90)+'｜navigator.vibrate：'+('vibrate' in navigator?'有':'沒有')+'。按按鈕時請用手指實際按，看手機有沒有震動。';
-$('b1').onclick=()=>{
-  if('vibrate' in navigator){const ok=navigator.vibrate(60);$('res').textContent='已呼叫 vibrate，回傳 '+ok;}
-  else $('res').textContent='此瀏覽器沒有 navigator.vibrate';
-};
-$('sw').addEventListener('change',()=>{$('res').textContent='已觸發開關元件（有震動嗎？）';});
+const sw=$('sw');
+$('info').textContent='navigator.vibrate：'+('vibrate' in navigator?'有':'沒有')+'。每次間隔 45 毫秒連續觸發，請用手指按按鈕，比較哪個最明顯。';
+$('std').onclick=()=>{ if('vibrate' in navigator){navigator.vibrate(60);$('res').textContent='已呼叫 vibrate';} else $('res').textContent='此瀏覽器沒有 navigator.vibrate'; };
+function buzz(n){
+  let i=0;
+  (function go(){ sw.click(); if(++i<n) setTimeout(go,45); })();
+}
+document.querySelectorAll('button.s').forEach(b=>b.onclick=()=>{const n=+b.dataset.n;buzz(n);$('res').textContent='已觸發 ×'+n;});
 </script></body></html>
