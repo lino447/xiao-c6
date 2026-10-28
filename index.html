@@ -306,6 +306,12 @@
         <span>模擬中：蓋子 30 秒後自動關閉（同韌體）</span>
         <span><button class="cb" type="button" data-cmd="CLOSE_FRUNK">關前箱</button> <button class="cb" type="button" data-cmd="CLOSE_TRUNK">關後箱</button></span>
       </div>
+      <div class="list">
+        <button class="li" id="demoDoor" type="button" role="switch" aria-checked="false">
+          <span class="k">開門動畫<small>開／關左右兩側車門，只動畫面上的 3D 車，不會送任何藍牙指令。</small></span>
+          <span class="switch" id="demoDoorSw"></span>
+        </button>
+      </div>
     </div>
   </section>
 
@@ -464,30 +470,6 @@
           <div class="log mini" id="logMini"></div>
         </div>
       </details>
-
-      <div class="sec">模擬模式（不需板子）</div>
-      <div class="list">
-        <button class="li" id="simRow" type="button">
-          <span class="k">模擬 XIAO-C6<small>假裝已連上板子，到「車輛」分頁按解鎖／上鎖／開前箱／開後箱測試。完全不會送出藍牙指令。網址加 <code>?sim=1</code> 可直接進入模擬模式。</small></span>
-          <span class="switch" id="simRowSw"></span>
-        </button>
-      </div>
-
-      <div class="sec">3D 動畫預覽（不需板子）</div>
-      <div class="list">
-        <button class="li" id="demoFrunk" type="button">
-          <span class="k">前箱開啟動畫<small>只動畫面上的 3D 車，不會送任何藍牙指令。</small></span>
-          <span class="switch" id="demoFrunkSw"></span>
-        </button>
-        <button class="li" id="demoTrunk" type="button">
-          <span class="k">後箱開啟動畫<small>板子回報 FRUNK=1／TRUNK=1 時也會自動播放，回到 0 就關上。</small></span>
-          <span class="switch" id="demoTrunkSw"></span>
-        </button>
-        <button class="li" id="demoDoor" type="button">
-          <span class="k">開門動畫（左右兩側車門）<small>開／關兩側車門，只動畫面上的 3D 車，不會送任何藍牙指令。</small></span>
-          <span class="switch" id="demoDoorSw"></span>
-        </button>
-      </div>
 
       <div class="sec">素材授權</div>
       <div class="list">
@@ -1075,17 +1057,13 @@ $('plateChip').addEventListener('click', () => {
 $('plateEdit').addEventListener('click', () => { showView('account', 'plateSec'); setTimeout(() => plateInput.focus({ preventScroll: true }), 50); });
 renderPlateUI(); renderPlateChip();
 function renderDemo() {
-  $('demoFrunkSw').classList.toggle('on', demoLid.frunk);
-  $('demoTrunkSw').classList.toggle('on', demoLid.trunk);
   $('demoDoorSw').classList.toggle('on', demoLid.door);
+  $('demoDoor').setAttribute('aria-checked', demoLid.door ? 'true' : 'false');
 }
-['frunk', 'trunk', 'door'].forEach((k) => {
-  $('demo' + k[0].toUpperCase() + k.slice(1)).addEventListener('click', () => {
-    demoLid[k] = !demoLid[k];
-    renderDemo();
-    renderStatus();
-    if (demoLid[k]) showView('car');
-  });
+$('demoDoor').addEventListener('click', () => {
+  demoLid.door = !demoLid.door;
+  renderDemo();
+  renderStatus();
 });
 // 網址加 ?demo=frunk、?demo=trunk、?demo=door 或 ?demo=frunk,trunk,door 可直接預覽
 new URLSearchParams(location.search).get('demo')?.split(',').forEach((k) => { if (k in demoLid) demoLid[k] = true; });
@@ -1357,7 +1335,6 @@ function renderSim() {
   $('simToggle').classList.toggle('on', simMode);
   $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
   $('simSw').classList.toggle('on', simMode);
-  $('simRowSw').classList.toggle('on', simMode);
 }
 function simOn() {
   if (simMode) return;
@@ -1388,7 +1365,6 @@ function simOff(why) {
 }
 const simToggleClick = () => (simMode ? simOff() : simOn());
 $('simToggle').addEventListener('click', simToggleClick);
-$('simRow').addEventListener('click', simToggleClick);
 
 // ===== 事件綁定 =====
 $('btnConnect').addEventListener('click', connect);
