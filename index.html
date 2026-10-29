@@ -233,7 +233,7 @@
   .platepv { display:block; width:200px; aspect-ratio:32/15; margin:0 auto; }
   .platebox { padding:16px 0; }
   .platebox + .li { border-top:1px solid var(--line); }
-  .li input.plin { width:130px; flex:none; height:28px; padding:0; border:0; background:transparent; text-align:right; text-transform:uppercase; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:16px; }
+  .li input.plin { width:160px; flex:none; height:28px; padding:0; border:0; background:transparent; text-align:right; text-transform:uppercase; font:inherit; font-size:16px; color:var(--t2); transform:scale(.8125); transform-origin:right center; margin-left:-30px; }   /* 視覺 13px 與上方數值一致；實際 16px 避免 iOS 點輸入框時自動放大 */
   .li input.plin::placeholder { color:var(--t3); }
   .legal { font-size:11.5px; color:var(--t3); line-height:1.6; padding-bottom:24px; }
   .failmsg { position:absolute; left:18px; bottom:8px; z-index:3; font-size:11px; color:var(--t3); max-width:50%; }
@@ -425,18 +425,13 @@
       <div class="kick">我的車</div>
       <h2>帳戶</h2>
 
-      <div class="sec" id="details">車輛詳情</div>
+      <div class="sec" id="details">車輛詳情</div><span id="plateSec"></span>
       <div class="list">
         <div class="li"><span class="k">車輛</span><span class="v">Porsche Boxster GTS</span></div>
+        <div class="li"><label class="k" for="plateInput">車牌號碼</label><input type="text" class="plin" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
         <div class="li"><span class="k">藍牙模組</span><span class="v">Seeed XIAO ESP32-C6 · <span id="accConn">未連線</span></span></div>
         <div class="li"><span class="k">裝置名稱</span><span class="v"><code>XIAO-C6</code></span></div>
         <div class="li"><span class="k">運行時間</span><span class="v" id="upVal">—</span></div>
-      </div>
-
-      <div class="sec" id="plateSec">車牌</div>
-      <div class="list">
-        <div class="platebox"><canvas class="platepv" id="platePv" width="640" height="300" role="img" aria-label="車牌預覽"></canvas></div>
-        <div class="li"><label class="k" for="plateInput">車牌號碼<small>最多 8 碼，英文與數字，會顯示在 3D 車的車牌上。</small></label><input type="text" class="plin" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
       </div>
 
       <div class="sec" id="autoSec">連線</div>
@@ -963,7 +958,7 @@ function paintPlateTexture() {
   });
 }
 function renderPlateUI() {
-  drawPlate($('platePv'), plateText, plateStyle, true, 'r');
+  if ($('platePv')) drawPlate($('platePv'), plateText, plateStyle, true, 'r');
   drawPlate($('plateChipCv'), plateText, plateStyle, false, 'f', 0.12);
   $('plateChip').hidden = !plateText;
   $('plateChipTx').textContent = plateView === 1 ? '前車牌特寫' : plateView === 2 ? '後車牌特寫' : plateText;
@@ -1311,7 +1306,7 @@ function simTick() {
   if (changed) { log('（模擬）前／後箱 30 秒自動關閉', 'sys'); handleReply(simStatusText()); }   // 韌體自動關閉時會主動送 STATUS
 }
 function renderSim() {
-  $('simBar').hidden = !simMode;
+  $('simBar').hidden = true;   // 模擬提示條不顯示
   $('simTools').hidden = !simMode;
   $('demoDoorList').hidden = !simMode;   // 開門動畫只在模擬模式顯示
   $('simToggle').classList.toggle('on', simMode);
