@@ -69,6 +69,8 @@
   .sub { display:flex; align-items:center; gap:8px; margin-top:12px; font-size:13px; color:var(--t2); width:100%; }
   .sub .ch { margin-left:auto; color:var(--t3); font-size:16px; }
   .srow { display:flex; margin-top:14px; border-top:1px solid var(--line); }
+  #statusCard { padding-top:0; }
+  #statusCard .srow { margin-top:0; border-top:0; }
   .srow > div { flex:1; padding:10px 0 11px; text-align:center; min-width:0; }
   .srow > div + div { border-left:1px solid #2f3034; }
   .srow .k { font-size:11px; color:var(--t2); }
@@ -273,13 +275,7 @@
     <div class="pad">
       <button class="btn" id="btnMain">車輛詳情</button>
 
-      <div class="card flush">
-        <div class="big"><span id="sigBig">未連線</span><span class="bar"></span><span id="sigVal">XIAO-C6</span><small id="sigUnit">BLE</small></div>
-        <div class="prog" id="sigProg"><i></i></div>
-        <button class="sub" id="autoRow" type="button">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path id="autoCheck" stroke="#36b37e" d="M5 12.5l4.5 4.5L19 7.5"/></svg>
-          <span>靠近車輛時自動連線</span><span class="ch">›</span>
-        </button>
+      <div class="card flush" id="statusCard">
         <div class="srow">
           <div><div class="k">車門</div><div class="v"><b id="lockDot"></b><span id="lockVal">—</span></div></div>
           <div><div class="k">前箱</div><div class="v" id="frunkVal">—</div></div>
@@ -306,7 +302,7 @@
         <span>模擬中：蓋子 30 秒後自動關閉（同韌體）</span>
         <span class="bs"><button class="cb sm" type="button" data-cmd="CLOSE_FRUNK">關前箱</button><button class="cb sm" type="button" data-cmd="CLOSE_TRUNK">關後箱</button></span>
       </div>
-      <div class="list">
+      <div class="list" id="demoDoorList" hidden>
         <button class="li" id="demoDoor" type="button" role="switch" aria-checked="false">
           <span class="k">開門動畫<small>開／關左右兩側車門，只動畫面上的 3D 車，不會送任何藍牙指令。</small></span>
           <span class="switch" id="demoDoorSw"></span>
@@ -565,11 +561,9 @@ function setState(state, text) {
   $('btnDisconnect').disabled = !connected;
   $('devCard').querySelector('em').textContent = simMode ? '模擬中' : '已連線';
 
-  // 未連線時主按鈕變成白色「搜尋並連線」，連線後恢復設計稿的「車輛詳情」
   const main = $('btnMain');
-  main.disabled = busy;
-  main.classList.toggle('primary', state === 'idle');
-  main.textContent = connected ? '車輛詳情' : busy ? '連線中…' : '搜尋並連線';
+  // 與原生 App 相同：永遠是「車輛詳情」，按下跳到帳戶頁的車輛詳情；連線改在「裝置 › 連線」
+  main.textContent = '車輛詳情';
 
   document.querySelectorAll('.ctl').forEach((b) => (b.disabled = !connected));
   document.querySelectorAll('.hapOv').forEach((o) => o.classList.toggle('act', connected));
@@ -594,22 +588,24 @@ function fmtUptime(s) {
 }
 
 function renderSignal() {
+  // 車輛頁的訊號卡已移除；只更新仍存在的元素（裝置頁 devSig），其餘 null-guard
   const connected = connState === 'connected';
+  const set = (id, v) => { const e = $(id); if (e) e.textContent = v; };
   const prog = $('sigProg');
-  prog.className = 'prog' + (connState === 'busy' ? ' run' : '');
+  if (prog) prog.className = 'prog' + (connState === 'busy' ? ' run' : '');
   const fresh = dev.rssi != null && Date.now() - dev.rssiAt < 15000;
+  let big, val, unit, w;
   if (connected && fresh) {
-    // 只有瀏覽器真的回報 RSSI 時才顯示 dBm
     const r = dev.rssi;
-    $('sigBig').textContent = r >= -60 ? '訊號強' : r >= -75 ? '訊號中' : '訊號弱';
-    $('sigVal').textContent = r; $('sigUnit').textContent = 'dBm';
-    prog.firstElementChild.style.width = Math.max(5, Math.min(100, (r + 100) * 2)) + '%';
+    big = r >= -60 ? '訊號強' : r >= -75 ? '訊號中' : '訊號弱';
+    val = r; unit = 'dBm'; w = Math.max(5, Math.min(100, (r + 100) * 2)) + '%';
   } else {
-    $('sigBig').textContent = connected ? (simMode ? '模擬中' : '已連線') : connState === 'busy' ? '連線中' : '未連線';
-    $('sigVal').textContent = simMode ? SIM_NAME : (device && device.name) || DEVICE_NAME; $('sigUnit').textContent = 'BLE';
-    prog.firstElementChild.style.width = connected ? '100%' : '';
+    big = connected ? (simMode ? '模擬中' : '已連線') : connState === 'busy' ? '連線中' : '未連線';
+    val = simMode ? SIM_NAME : (device && device.name) || DEVICE_NAME; unit = 'BLE'; w = connected ? '100%' : '';
   }
-  $('devSig').textContent = $('sigVal').textContent + ' ' + $('sigUnit').textContent;
+  set('sigBig', big); set('sigVal', val); set('sigUnit', unit);
+  if (prog && prog.firstElementChild) prog.firstElementChild.style.width = w;
+  set('devSig', val + ' ' + unit);
 }
 
 function renderStatus() {
@@ -1079,7 +1075,7 @@ let watching = null;
 
 function renderAuto() {
   $('autoSwitch').classList.toggle('on', autoConnect);
-  $('autoCheck').setAttribute('stroke', autoConnect ? '#36b37e' : '#6f7075');
+  const ac = $('autoCheck'); if (ac) ac.setAttribute('stroke', autoConnect ? '#36b37e' : '#6f7075');
   $('autoNote').textContent = autoSupported()
     ? '記住已配對的 XIAO-C6，看到它的廣播就自動連上（頁面需開著）。'
     : '此瀏覽器不支援背景監聽廣播，只會在意外斷線時自動重試 3 次。';
@@ -1317,6 +1313,7 @@ function simTick() {
 function renderSim() {
   $('simBar').hidden = !simMode;
   $('simTools').hidden = !simMode;
+  $('demoDoorList').hidden = !simMode;   // 開門動畫只在模擬模式顯示
   $('simToggle').classList.toggle('on', simMode);
   $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
   $('simSw').classList.toggle('on', simMode);
@@ -1342,6 +1339,7 @@ function simOff(why) {
   clearInterval(sim.tick); sim.tick = 0;
   sim.timers.forEach(clearTimeout); sim.timers = [];
   simMode = false;
+  if (demoLid.door) { demoLid.door = false; renderDemo(); }   // 隱藏開門動畫時一併關門
   renderSim();
   log('🧪 模擬模式關閉' + (why ? `（${why}）` : ''), 'sys');
   setState('idle', '尚未連線');   // 重設車門／前後箱狀態；3D 蓋子會回到關閉
@@ -1353,7 +1351,7 @@ $('simToggle').addEventListener('click', simToggleClick);
 
 // ===== 事件綁定 =====
 $('btnConnect').addEventListener('click', connect);
-$('btnMain').addEventListener('click', () => (connState === 'connected' ? showView('account', 'details') : connect()));
+$('btnMain').addEventListener('click', () => showView('account', 'details'));
 $('btnDisconnect').addEventListener('click', disconnect);
 $('btnClear').addEventListener('click', () => { $('log').innerHTML = ''; $('logMini').innerHTML = ''; });
 document.querySelectorAll('button[data-cmd]').forEach((b) =>
@@ -1449,7 +1447,7 @@ document.querySelectorAll('.hapOv').forEach((o) => {
   document.addEventListener('touchstart', press(true), { passive: true });
   document.addEventListener('touchend', press(false)); document.addEventListener('touchcancel', press(false));
 })();
-$('autoRow').addEventListener('click', () => showView('account', 'autoSec'));
+$('autoRow')?.addEventListener('click', () => showView('account', 'autoSec'));
 $('autoToggle').addEventListener('click', () => {
   autoConnect = !autoConnect;
   localStorage.setItem('autoConnect', autoConnect ? '1' : '0');
