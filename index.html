@@ -358,7 +358,7 @@
         <div class="failmsg" id="failMsg" hidden>3D 模型載入失敗，改顯示 2D 圖片</div>
         <div class="platechip" id="plateChipBox">
           <button type="button" id="plateChip" aria-label="車牌特寫"><canvas id="plateChipCv" width="184" height="77"></canvas><span id="plateChipTx">車牌</span></button>
-          <button type="button" class="edit" id="plateEdit" aria-label="編輯車牌"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span id="plateEditTx" hidden>設定車牌</span></button>
+          <button type="button" class="edit" id="plateEdit" aria-label="編輯車牌" hidden><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></svg><span id="plateEditTx" hidden>設定車牌</span></button>
         </div></div>
     </div>
 
@@ -1479,6 +1479,7 @@ function renderSim() {
   $('simBar').hidden = true;   // 模擬提示條不顯示
   $('simTools').hidden = !simMode;
   $('demoDoorList').hidden = !simMode;   // 開門動畫只在模擬模式顯示
+  $('plateEdit').hidden = !simMode;   // 3D 車上的「設定車牌」鈕只在模擬模式顯示（車牌本身不受影響）
   $('simToggle').classList.toggle('on', simMode);
   $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
   $('simSw').classList.toggle('on', simMode);
