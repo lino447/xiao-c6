@@ -218,6 +218,7 @@
   .simtog .switch:after { width:16px; height:16px; top:3px; left:3px; }
   .simtog .switch.on { background:#e0a526; }
   .simtog .switch.on:after { transform:translateX(14px); }
+  .switch.simsw.on { background:#e0a526; }
   .simbar { position:sticky; top:0; z-index:60; background:#3a2e0f; color:#ffd36b; font-size:12px; font-weight:500; text-align:center; padding:6px 10px; }
   .simtools { margin-top:10px; color:#ffd36b; font-size:11px; line-height:1.4; display:flex; align-items:center; justify-content:space-between; gap:8px; }
   .simtools .bs { display:flex; gap:8px; flex:none; }
@@ -235,6 +236,8 @@
   .platebox + .li { border-top:1px solid var(--line); }
   .li input.plin { width:160px; flex:none; height:28px; padding:0; border:0; background:transparent; text-align:right; text-transform:uppercase; font:inherit; font-size:16px; color:var(--t2); transform:scale(.8125); transform-origin:right center; margin-left:-30px; }   /* 視覺 13px 與上方數值一致；實際 16px 避免 iOS 點輸入框時自動放大 */
   .li input.plin::placeholder { color:var(--t3); }
+  .li input.plin.noup { text-transform:none; }
+  .cartitle { cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .legal { font-size:11.5px; color:var(--t3); line-height:1.6; padding-bottom:24px; }
   .failmsg { position:absolute; left:18px; bottom:8px; z-index:3; font-size:11px; color:var(--t3); max-width:50%; }
   .carposter { position:absolute; left:8px; right:8px; top:40px; height:205px; width:calc(100% - 16px); object-fit:contain; display:block;
@@ -252,13 +255,12 @@
   <section class="view" id="view-car">
     <div class="pad">
       <div class="upd" id="updText">最後更新：—</div>
-      <h1>我的車</h1>
+      <h1 id="carTitle" class="cartitle">我的車</h1>
       <div class="chiprow">
       <div class="chip">
         <span class="bt"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><b id="chipDot"></b></span>
         <span id="chipText">XIAO-C6 尚未連線</span>
       </div>
-      <button class="simtog" id="simToggle" type="button" role="switch" aria-checked="false" aria-label="模擬模式">模擬模式<span class="switch" id="simSw"></span></button>
       </div>
     </div>
 
@@ -422,11 +424,12 @@
   <!-- ===================== 帳戶 / 設定 ===================== -->
   <section class="view" id="view-account" hidden>
     <div class="pad">
-      <div class="kick">我的車</div>
+      <div class="kick" id="accKick">我的車</div>
       <h2>帳戶</h2>
 
       <div class="sec" id="details">車輛詳情</div><span id="plateSec"></span>
       <div class="list">
+        <div class="li"><label class="k" for="nameInput">名稱</label><input type="text" class="plin noup" id="nameInput" maxlength="16" placeholder="我的車" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
         <div class="li"><span class="k">車輛</span><span class="v">Porsche Boxster GTS</span></div>
         <div class="li"><label class="k" for="plateInput">車牌號碼</label><input type="text" class="plin" id="plateInput" maxlength="8" placeholder="ABC-1234" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done"></div>
         <div class="li"><span class="k">藍牙模組</span><span class="v">Seeed XIAO ESP32-C6 · <span id="accConn">未連線</span></span></div>
@@ -439,6 +442,10 @@
         <button class="li" id="autoToggle" type="button">
           <span class="k">靠近車輛時自動連線<small id="autoNote">記住已配對的 XIAO-C6，看到它的廣播就自動連上。</small></span>
           <span class="switch on" id="autoSwitch"></span>
+        </button>
+        <button class="li" id="simToggle" type="button" role="switch" aria-checked="false">
+          <span class="k">模擬模式<small>不連真的車，用來試按鈕和開門動畫，不會送出任何藍牙指令。</small></span>
+          <span class="switch simsw" id="simSw"></span>
         </button>
       </div>
 
@@ -1030,6 +1037,14 @@ $('plateChip').addEventListener('click', () => {
   if (lidOrder.length) camGo(LIDS[lidOrder[lidOrder.length - 1]].view);     // 蓋子還開著：回到蓋子的視角
   else { camGo(HOME_VIEW); setTimeout(() => { if (!lidOrder.length && !plateView) carMv.autoRotate = true; }, 650); }
 });
+// ===== 車輛名稱（手動命名，存在本機）=====
+const nameInput = $('nameInput');
+const renderCarName = () => { const n = (localStorage.getItem('carName') || '').trim() || '我的車'; $('carTitle').textContent = n; $('accKick').textContent = n; document.title = n + ' · XIAO ESP32-C6 藍牙遙控'; };
+nameInput.value = localStorage.getItem('carName') || '';
+nameInput.addEventListener('input', () => { localStorage.setItem('carName', nameInput.value.trim()); renderCarName(); });
+nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') nameInput.blur(); });
+$('carTitle').addEventListener('click', () => { showView('account', 'details'); setTimeout(() => nameInput.focus({ preventScroll: true }), 50); });
+renderCarName();
 $('plateEdit').addEventListener('click', () => { showView('account', 'plateSec'); setTimeout(() => plateInput.focus({ preventScroll: true }), 50); });
 renderPlateUI(); renderPlateChip();
 function renderDemo() {
