@@ -149,6 +149,91 @@
   .log:empty::before { content:'尚無紀錄'; color:var(--t3); }
   .l-tx { color:#fbfcff; } .l-rx { color:#7ee0ae; } .l-err { color:#ff6b6b; } .l-sys { color:var(--t3); }
 
+  /* ===== 車況 view ===== */
+  .sthd { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; }
+  .stnote { font-size:12px; color:var(--t3); margin-top:6px; }
+  .loc { padding:0; overflow:hidden; }
+  .locb { display:block; width:100%; text-align:left; color:inherit; }
+  .map { position:relative; height:128px; background:#141518; overflow:hidden; }
+  .map svg { position:absolute; inset:0; width:100%; height:100%; }
+  .pin { position:absolute; left:50%; top:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border-radius:50%; background:var(--red); border:2.5px solid #fff; box-shadow:0 2px 8px rgba(0,0,0,.6); }
+  .pin::after { content:""; position:absolute; inset:-11px; border-radius:50%; border:1.5px solid rgba(213,0,28,.55); animation:pinp 2.2s ease-out infinite; }
+  .map.none .pin { background:#6f7075; } .map.none .pin::after { display:none; }
+  @keyframes pinp { 0% { transform:scale(.4); opacity:1; } 100% { transform:scale(1.4); opacity:0; } }
+  .locx { display:flex; align-items:center; gap:10px; padding:12px 16px; }
+  .locx .tx { flex:1; min-width:0; }
+  .locx .t { font-size:14px; font-weight:500; }
+  .locx .s { font-size:12px; color:var(--t2); margin-top:2px; font-variant-numeric:tabular-nums; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .locx svg { flex:none; }
+  .locf { display:flex; justify-content:space-between; align-items:center; padding:0 16px 12px; font-size:12px; color:var(--t3); margin-top:-4px; }
+  .locf a { color:var(--t1); text-decoration:none; display:inline-flex; align-items:center; gap:4px; padding:4px 0; }
+  .mgrid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+  .mt { background:var(--card); border-radius:12px; padding:13px 14px 12px; min-width:0; }
+  .mt .h { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--t2); }
+  .mt .h svg { flex:none; stroke:var(--t2); }
+  .mt .n { margin-top:10px; font-size:28px; font-weight:500; letter-spacing:.2px; line-height:1.1; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .mt .n small { font-size:13px; font-weight:400; color:var(--t2); margin-left:3px; letter-spacing:0; }
+  .mt .f { margin-top:6px; font-size:11.5px; color:var(--t3); display:flex; align-items:center; gap:5px; white-space:nowrap; }
+  .mt .f b { width:6px; height:6px; border-radius:3px; background:var(--t3); flex:none; }
+  .mt .f b.ok { background:var(--ok); } .mt .f b.warn { background:var(--warn); }
+  .mt.warn .n { color:var(--warn); }
+  .mt.empty .nv, .tpv.empty { color:#4a4b50; font-weight:400; }
+  .mt.empty .f b { display:none; }
+  .fbar { height:4px; border-radius:2px; background:var(--card2); margin-top:9px; overflow:hidden; }
+  .fbar i { display:block; height:100%; width:0; background:var(--t1); border-radius:2px; transition:width .6s; }
+  .mt.warn .fbar i { background:var(--warn); }
+  .tpc { margin-top:10px; }
+  .tpc .ctitle span { font-size:12px; }
+  .tpw { display:grid; grid-template-columns:1fr 96px 1fr; align-items:center; margin-top:10px; }
+  .tpw .col { display:flex; flex-direction:column; justify-content:space-between; height:187px; padding:34px 0 26px; }
+  .tpw .col.r { text-align:right; }
+  .tpv { font-size:22px; font-weight:500; font-variant-numeric:tabular-nums; line-height:1.1; }
+  .tpv small { display:block; font-size:11px; font-weight:400; color:var(--t3); margin-top:3px; }
+  .tpv.low { color:var(--warn); } .tpv.low small { color:#c9a452; }
+  .tpcar { position:relative; width:84px; height:187px; margin:0 auto; }
+  .tpcar img { display:block; width:84px; height:187px; -webkit-user-drag:none; user-select:none; pointer-events:none; }
+  .tpw .tire { position:absolute; width:8px; height:24px; margin:-12px 0 0 -4px; border-radius:4px; opacity:0; transition:opacity .3s; pointer-events:none; }
+  .tpw .tire.low { opacity:1; background:rgba(255,184,0,.55); border:1px solid var(--warn); box-shadow:0 0 10px 2px rgba(255,170,0,.55); }
+  details.adv { margin-top:22px; }
+  details.adv > summary { list-style:none; display:flex; align-items:center; justify-content:space-between; background:var(--card); border-radius:12px; padding:13px 16px; font-size:14px; color:var(--t2); cursor:pointer; }
+  details.adv > summary::-webkit-details-marker { display:none; }
+  details.adv > summary svg { transition:transform .2s; stroke:var(--t3); }
+  details.adv[open] > summary svg { transform:rotate(90deg); }
+  details.adv[open] > summary { color:var(--t1); }
+
+  /* ===== CAN view ===== */
+  .canhd { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+  .canhd .k { font-size:12px; color:var(--t2); }
+  .canst { display:flex; align-items:center; gap:7px; font-size:15px; font-weight:500; margin-top:2px; }
+  .canst b { width:8px; height:8px; border-radius:4px; background:var(--t3); flex:none; }
+  .canst b.on { background:var(--ok); animation:blink 1.4s infinite; } .canst b.pause { background:var(--warn); }
+  .simpill { font-size:11px; color:#ffd36b; border:1px solid #5a4a1a; background:#1d180a; border-radius:10px; padding:2px 8px; white-space:nowrap; }
+  .cang { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:12px; padding-top:11px; border-top:1px solid var(--line); text-align:center; }
+  .cang .k { font-size:11px; color:var(--t3); }
+  .cang .v { font-size:13px; margin-top:3px; white-space:nowrap; font-variant-numeric:tabular-nums; }
+  .canctl { display:flex; gap:8px; margin-top:10px; align-items:center; }
+  .canctl .cb.sm { padding:0 12px; }
+  .canctl .cb.sm:disabled { opacity:.4; }
+  .canctl input[type=text], .cansend input[type=text] { flex:1; min-width:0; height:32px; font-size:16px; padding:0 10px; text-transform:uppercase;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+  .canctl input::placeholder, .cansend input::placeholder { text-transform:none; color:var(--t3); }
+  .cantb { background:#0d0d0f; border:1px solid var(--line); border-radius:10px; margin-top:10px; padding:4px 0; }
+  .cantb .r { display:grid; grid-template-columns:38px 16px 1fr 46px 38px; gap:6px; align-items:center; padding:3px 10px; min-height:24px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:11.5px; color:var(--t2); font-variant-numeric:tabular-nums; }
+  .cantb .r + .r { border-top:1px solid #18191c; }
+  .cantb .r.h { font-family:inherit; font-size:10.5px; color:var(--t3); min-height:22px; }
+  .cantb .r .n, .cantb .r .c { text-align:right; }
+  .cantb .r .i { color:var(--t1); font-weight:600; }
+  .cantb .r.tx .i { color:#ffd36b; }
+  .cantb .r .d { white-space:nowrap; overflow:hidden; letter-spacing:-.2px; }
+  .cantb .r .d span { transition:color .4s, background .4s; border-radius:2px; }
+  .cantb .r .d span.ch { color:#000; background:#7ee0ae; transition:none; }
+  .canempty { padding:22px 10px; text-align:center; font-size:12.5px; color:var(--t3); }
+  .cansend { display:flex; gap:8px; }
+  .cansend #canTxId { flex:none; width:72px; }
+  .cansend .cb.sm:disabled, .cansend input:disabled { opacity:.4; }
+  .canwarn { font-size:11.5px; color:var(--t3); margin-top:8px; line-height:1.5; }
+
   /* ===== 裝置 view ===== */
   .tabs { display:flex; margin-top:14px; border-bottom:1px solid var(--line); }
   .tabs button { flex:1; text-align:center; font-size:14px; height:38px; color:var(--t2); }
@@ -206,6 +291,9 @@
   .tabbar .ico .f { fill:currentColor; }
   .tabbar .ico .hole { fill:#0b0b0c; }
   .tabbar button.a { color:var(--red); }
+  .tabbar button { justify-content:center; gap:0; }   /* 只顯示圖示，文字留給讀屏 */
+  .tabbar .tl { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+  .tabbar .ico { transform:scale(1.1); }
   .tabbar .ico i { position:absolute; top:-1px; right:-4px; width:8px; height:8px; border-radius:4px; background:var(--ok); border:1.5px solid #0b0b0c; display:none; }
   .tabbar .ico i.on { display:block; }
 
@@ -409,15 +497,81 @@
     </div>
   </section>
 
-  <!-- ===================== 紀錄 ===================== -->
-  <section class="view" id="view-log" hidden>
+  <!-- ===================== CAN ===================== -->
+  <section class="view" id="view-can" hidden>
     <div class="pad">
-      <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
-        <div><div class="kick">通訊紀錄</div><h2>紀錄</h2></div>
-        <button class="cb sm" id="btnClear" type="button">清除</button>
+      <div class="sthd">
+        <div><div class="kick">車載網路 · CAN</div><h2>車況</h2></div>
+        <span class="simpill" id="stSimPill" hidden>🧪 模擬資料</span>
       </div>
-      <div class="scan" style="margin-top:10px;justify-content:flex-start;font-size:11.5px;color:var(--t3)"><span>→ 送出　← 回覆　✖ 錯誤</span></div>
-      <div class="log full" id="log"></div>
+      <div class="stnote" id="stNote">連線後顯示即時數據</div>
+
+      <div class="card loc">
+        <button class="locb" id="locBtn" type="button" aria-label="取得目前位置">
+          <div class="map none" id="locMap">
+            <svg viewBox="0 0 360 128" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <g stroke="#1d1e22" stroke-width="1"><path d="M0 32h360M0 64h360M0 96h360M45 0v128M90 0v128M135 0v128M180 0v128M225 0v128M270 0v128M315 0v128"/></g>
+              <path d="M-10 108C70 96 120 120 200 100S310 70 370 78" stroke="#16263a" stroke-width="14" fill="none"/>
+              <g stroke="#2a2b30" fill="none" stroke-linecap="round"><path d="M-10 52L370 40" stroke-width="7"/><path d="M118 -10L150 140" stroke-width="7"/><path d="M262 -10L240 140" stroke-width="5"/><path d="M0 18L118 30M150 60L360 98M20 140L70 52" stroke-width="3.5"/></g>
+            </svg>
+            <span class="pin"></span>
+          </div>
+          <div class="locx">
+            <div class="tx"><div class="t">上次停車位置</div><div class="s" id="locLine">輕觸以定位</div></div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a3a4a8" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="12" r="6.5"/><circle cx="12" cy="12" r="2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3"/></svg>
+          </div>
+        </button>
+        <div class="locf" id="locFoot" hidden><span id="locTime"></span><a id="locLink" href="#" target="_blank" rel="noopener">在地圖開啟<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 5h10v10M19 5L6 18"/></svg></a></div>
+      </div>
+
+      <div class="mgrid">
+        <div class="mt" id="mCool"><div class="h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5v10"/><circle cx="12" cy="17" r="3.2"/><path d="M12 6.5h3M12 9.5h3"/><path d="M4 21c1.3 0 1.3-1 2.6-1M17.4 20c1.3 0 1.3 1 2.6 1"/></svg>水溫</div><div class="n"><span class="nv">—</span><small>°C</small></div><div class="f"><b></b><span class="fs">—</span></div></div>
+        <div class="mt" id="mOil"><div class="h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5h11l5-5.5-3.2-1-4.8 3H8l-1.5-2H4z"/><path d="M8 10V7.5h3"/><path d="M20 15c0 1.2-.7 2-1.5 2S17 16.2 17 15s1.5-3 1.5-3S20 13.8 20 15z"/></svg>油溫</div><div class="n"><span class="nv">—</span><small>°C</small></div><div class="f"><b></b><span class="fs">—</span></div></div>
+        <div class="mt" id="mCons"><div class="h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17a8 8 0 1 1 16 0"/><path d="M12 17l3.5-4.5"/><path d="M8.5 20.5h7"/></svg>平均油耗</div><div class="n"><span class="nv">—</span><small>L/100km</small></div><div class="f"><b></b><span class="fs">—</span></div></div>
+        <div class="mt" id="mFuel"><div class="h"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20.5V5a1.5 1.5 0 0 1 1.5-1.5h6A1.5 1.5 0 0 1 14 5v15.5M3.5 20.5h12M5 10h9"/><path d="M14 8.5l3 1.5V17a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg>油箱</div><div class="n"><span class="nv">—</span><small>%</small></div><div class="fbar"><i></i></div><div class="f"><span class="fs">續航 —</span></div></div>
+      </div>
+
+      <div class="card tpc">
+        <div class="ctitle">胎壓<span id="tpSum">bar</span></div>
+        <div class="tpw">
+          <div class="col"><div class="tpv" id="tpFL">—<small>左前</small></div><div class="tpv" id="tpRL">—<small>左後</small></div></div>
+          <div class="tpcar"><img src="car_top.png" width="84" height="187" alt="車身俯視" draggable="false"><i class="tire" id="twFL" style="left:9.6%;top:26.8%"></i><i class="tire" id="twFR" style="left:90.4%;top:26.8%"></i><i class="tire" id="twRL" style="left:9.6%;top:76.5%"></i><i class="tire" id="twRR" style="left:90.4%;top:76.5%"></i></div>
+          <div class="col r"><div class="tpv" id="tpFR">—<small>右前</small></div><div class="tpv" id="tpRR">—<small>右後</small></div></div>
+        </div>
+      </div>
+
+      <details class="adv" id="canAdv">
+        <summary>進階 · CAN 監聽<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg></summary>
+      <div class="card">
+        <div class="canhd">
+          <div><div class="k">狀態</div><div class="canst"><b id="canDot"></b><span id="canState">未連線</span></div></div>
+          <span class="simpill" id="canSimPill" hidden>🧪 模擬資料</span>
+        </div>
+        <div class="cang">
+          <div><div class="k">鮑率</div><div class="v">500 kbps</div></div>
+          <div><div class="k">模式</div><div class="v">只聽</div></div>
+          <div><div class="k">每秒訊框</div><div class="v" id="canFps">0</div></div>
+          <div><div class="k">總訊框</div><div class="v" id="canTotal">0</div></div>
+        </div>
+      </div>
+
+      <div class="canctl">
+        <button class="cb sm" id="canRun" type="button" disabled>暫停</button>
+        <button class="cb sm" id="canClear" type="button">清除</button>
+        <input type="text" id="canFilter" placeholder="ID 篩選，例如 1A0" maxlength="3" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" aria-label="ID 篩選">
+      </div>
+      <div class="cantb" id="canTable"></div>
+
+      <div class="sec">送出訊框</div>
+      <form class="cansend" id="canSendForm" autocomplete="off">
+        <input type="text" id="canTxId" placeholder="ID" maxlength="3" autocapitalize="characters" autocorrect="off" spellcheck="false" aria-label="訊框 ID（16 進位）">
+        <input type="text" id="canTxData" placeholder="資料，例如 01 FF 00" maxlength="23" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="資料位元組（16 進位）">
+        <button class="cb sm p" id="canSendBtn" type="submit">送出</button>
+      </form>
+      <div class="canwarn" id="canTxNote">韌體尚未支援 CAN，目前只能用模擬模式預覽</div>
+
+      <div class="hint">需要 SN65HVD230 收發器接 OBD 第 6 / 14 腳；預設只聽，不會干擾車上網路。</div>
+      </details>
     </div>
   </section>
 
@@ -457,14 +611,14 @@
 
 <div class="tabbar">
   <nav>
-    <button data-view="car" class="a">
-      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24"><path class="f" d="M3 14.5c0-1.2.6-1.9 1.8-2.1l2.8-.6 2.3-2.9A2.5 2.5 0 0 1 11.8 8h3.3c.9 0 1.6.4 2.1 1.1l1.9 2.6c1 .3 1.9 1 1.9 2.1V16H3z"/><circle class="hole" cx="7" cy="16.2" r="1.7"/><circle class="hole" cx="17" cy="16.2" r="1.7"/></svg></span>車輛</button>
-    <button data-view="device">
-      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path class="s" stroke-width="1.4" d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><i id="tabDot"></i></span>裝置</button>
-    <button data-view="log">
-      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><g class="s" stroke-width="1.4"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g></svg></span>紀錄</button>
-    <button data-view="account">
-      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><g class="s" stroke-width="1.4"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c1.2-3.6 4.2-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></g></svg></span>帳戶</button>
+    <button data-view="car" aria-label="車輛" class="a">
+      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24"><path class="f" d="M3 14.5c0-1.2.6-1.9 1.8-2.1l2.8-.6 2.3-2.9A2.5 2.5 0 0 1 11.8 8h3.3c.9 0 1.6.4 2.1 1.1l1.9 2.6c1 .3 1.9 1 1.9 2.1V16H3z"/><circle class="hole" cx="7" cy="16.2" r="1.7"/><circle class="hole" cx="17" cy="16.2" r="1.7"/></svg></span><span class="tl">車輛</span></button>
+    <button data-view="device" aria-label="裝置">
+      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path class="s" stroke-width="1.4" d="M7 7l10 10-5 5V2l5 5L7 17"/></svg><i id="tabDot"></i></span><span class="tl">裝置</span></button>
+    <button data-view="can" aria-label="車況">
+      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><g class="s" stroke-width="1.4" stroke-linecap="round"><path d="M3.5 17a8.5 8.5 0 1 1 17 0"/><path d="M12 17l4.2-5.2"/><path d="M6 13.2l1 .6M12 8.6v1.2M18 13.2l-1 .6"/></g><circle class="f" cx="12" cy="17" r="1.5"/></svg></span><span class="tl">車況</span></button>
+    <button data-view="account" aria-label="帳戶">
+      <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><g class="s" stroke-width="1.4"><circle cx="12" cy="8" r="3.8"/><path d="M4.5 20.5c1.2-3.6 4.2-5.5 7.5-5.5s6.3 1.9 7.5 5.5"/></g></svg></span><span class="tl">帳戶</span></button>
   </nav>
 </div>
 
@@ -491,15 +645,16 @@ const SIM_NAME = 'XIAO-C6 (模擬)';
 // 板子 / 車輛狀態（全部由板子回覆解析，不自行假設）
 const dev = { led: null, pwm: null, uptime: null, uptimeAt: 0, lastReply: 0,
   lock: null, frunk: null, trunk: null, rssi: null, rssiAt: 0 };
-const VIEWS = ['car', 'device', 'log', 'account'];
+const VIEWS = ['car', 'device', 'can', 'account'];
 
 // ===== 分頁切換 =====
 function showView(name, anchor) {
+  if (name === 'log') name = 'can';   // 舊的 #log 連結改到 CAN 頁
   if (!VIEWS.includes(name)) name = 'car';
   document.querySelectorAll('.view').forEach((v) => (v.hidden = v.id !== 'view-' + name));
   document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('a', b.dataset.view === name));
   if (location.hash !== '#' + name) history.replaceState(null, '', '#' + name);
-  if (name === 'log') $('log').scrollTop = $('log').scrollHeight;
+  if (name === 'can' && typeof canRender === 'function') canRender(true);
   if (anchor && $(anchor)) $(anchor).scrollIntoView({ block: 'start' });
   else window.scrollTo(0, 0);
 }
@@ -537,8 +692,8 @@ function log(msg, type = 'sys') {
   const t = new Date().toLocaleTimeString('zh-TW', { hour12: false });
   const prefix = { tx: '→ ', rx: '← ', err: '✖ ', sys: '• ' }[type] || '';
   const text = `[${t}] ${prefix}${msg}`;
-  addLine($('log'), text, type, 300);
-  addLine($('logMini'), text, type, 40);
+  if ($('log')) addLine($('log'), text, type, 300);
+  if ($('logMini')) addLine($('logMini'), text, type, 40);
 }
 
 // ===== UI 狀態 =====
@@ -1327,6 +1482,7 @@ function renderSim() {
   $('simToggle').classList.toggle('on', simMode);
   $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
   $('simSw').classList.toggle('on', simMode);
+  if (typeof canRender === 'function') canRender(true);
 }
 function simOn() {
   if (simMode) return;
@@ -1343,12 +1499,14 @@ function simOn() {
   log(`（模擬）連線成功：${SIM_NAME}`);
   simReply(simStatusText(), 150);   // 板子剛連線會主動送 STATUS（剛上電 LOCK=?）
   sim.tick = setInterval(simTick, 1000);
+  canSimStart();
 }
 function simOff(why) {
   if (!simMode) return;
   clearInterval(sim.tick); sim.tick = 0;
   sim.timers.forEach(clearTimeout); sim.timers = [];
   simMode = false;
+  canSimStop();
   if (demoLid.door) { demoLid.door = false; renderDemo(); }   // 隱藏開門動畫時一併關門
   renderSim();
   log('🧪 模擬模式關閉' + (why ? `（${why}）` : ''), 'sys');
@@ -1359,11 +1517,190 @@ function simOff(why) {
 const simToggleClick = () => (simMode ? simOff() : simOn());
 $('simToggle').addEventListener('click', simToggleClick);
 
+// ===== CAN（目前只有模擬資料；韌體加上 TWAI 後改由藍牙轉送訊框）=====
+const can = { rows: new Map(), total: 0, fps: 0, fpsN: 0, fpsAt: 0, running: false, timers: [], ui: 0, dirty: true, t0: 0 };
+const hex = (n, w = 2) => n.toString(16).toUpperCase().padStart(w, '0');
+function canFrame(id, data, tx) {
+  const now = performance.now();
+  let r = can.rows.get(id);
+  if (!r) { r = { id, data: [], chg: [], count: 0, last: 0, period: 0, tx: !!tx }; can.rows.set(id, r); }
+  data.forEach((b, i) => { if (r.data[i] !== b) r.chg[i] = now; });
+  if (r.last) { const dt = now - r.last; r.period = r.period ? r.period * 0.8 + dt * 0.2 : dt; }
+  r.data = data.slice(); r.chg.length = data.length; r.last = now; r.count++; r.tx = !!tx;
+  can.total++; can.fpsN++; can.dirty = true;
+  if (!tx) carDecode(id, data);
+}
+// 解碼成車主看得懂的車況（ID 對照目前是模擬用；接上真車後依車型 DBC 調整）
+const car = {};
+function carReset() { Object.assign(car, { cool: null, oil: null, fuel: null, cons: null, tp: [null, null, null, null] }); car.dirty = true; }
+carReset();
+function carDecode(id, d) {
+  if (id === 0x5F0) { car.cool = d[0] - 40; car.oil = d[1] - 40; }
+  else if (id === 0x6A0) { car.fuel = d[3] / 2; car.cons = d[4] / 10; }
+  else if (id === 0x3A0) { car.tp = d.slice(0, 4).map((v) => v / 50); }
+  else return;
+  car.dirty = true;
+}
+const TANK_L = 64;   // 718 Boxster 油箱容量
+function carRender() {
+  const live = simMode;
+  const has = (v) => live && v != null;
+  $('stSimPill').hidden = !simMode;
+  $('stNote').hidden = live;
+  $('stNote').textContent = connState === 'connected' ? '韌體尚未支援 CAN，車況要等韌體更新後才會顯示' : '連線後顯示即時數據';
+  const tile = (el, v, txt, state, foot) => {
+    el.querySelector('.nv').textContent = has(v) ? txt : '—';
+    el.classList.toggle('warn', has(v) && state === 'warn'); el.classList.toggle('empty', !has(v));
+    const b = el.querySelector('.f b'); if (b) b.className = has(v) ? state : '';
+    el.querySelector('.fs').textContent = has(v) ? foot : '—';
+  };
+  tile($('mCool'), car.cool, String(car.cool), car.cool > 105 ? 'warn' : 'ok', car.cool > 105 ? '偏高' : car.cool < 70 ? '暖車中' : '正常');
+  tile($('mOil'), car.oil, String(car.oil), car.oil > 120 ? 'warn' : 'ok', car.oil > 120 ? '偏高' : car.oil < 80 ? '暖車中' : '正常');
+  tile($('mCons'), car.cons, car.cons != null ? car.cons.toFixed(1) : '', 'ok', '本次行程平均');
+  const range = car.fuel != null && car.cons ? Math.round(car.fuel / 100 * TANK_L / car.cons * 100) : 0;
+  tile($('mFuel'), car.fuel, car.fuel != null ? String(Math.round(car.fuel)) : '', car.fuel < 15 ? 'warn' : 'ok', `續航 約 ${range} km`);
+  if (!has(car.fuel)) $('mFuel').querySelector('.fs').textContent = '續航 —';
+  $('mFuel').querySelector('.fbar i').style.width = has(car.fuel) ? car.fuel + '%' : '0';
+  const low = [];
+  ['FL', 'FR', 'RL', 'RR'].forEach((k, i) => {
+    const v = car.tp[i], ok = has(v), isLow = ok && v < 2.0;
+    const el = $('tp' + k);
+    el.firstChild.textContent = ok ? v.toFixed(1) : '—';
+    el.classList.toggle('low', isLow); el.classList.toggle('empty', !ok); $('tw' + k).classList.toggle('low', isLow);
+    if (isLow) low.push(el.querySelector('small').textContent);
+  });
+  $('tpSum').textContent = low.length ? `${low.join('、')}偏低 · bar` : 'bar';
+  $('tpSum').style.color = low.length ? 'var(--warn)' : '';
+}
+// ===== 位置（只在輕觸時定位；存在這支手機）=====
+const SIM_LOC = { lat: 25.0340, lng: 121.5645, t: 0, sim: true };   // 模擬：台北
+let locBusy = false, locErr = '';
+function locSaved() { try { return JSON.parse(localStorage.getItem('parkLoc') || 'null'); } catch (_) { return null; } }
+function locRender() {
+  const L = locSaved() || (simMode ? SIM_LOC : null);
+  $('locMap').classList.toggle('none', !L);
+  $('locFoot').hidden = !L;
+  if (locBusy) $('locLine').textContent = '定位中…';
+  else if (locErr) $('locLine').textContent = locErr;
+  else if (!L) $('locLine').textContent = '輕觸以定位';
+  else $('locLine').textContent = `${L.lat.toFixed(4)}, ${L.lng.toFixed(4)}${L.sim ? ' · 模擬' : ''}`;
+  if (L) {
+    $('locTime').textContent = L.sim ? '模擬位置 · 輕觸改用目前位置' : '更新於 ' + new Date(L.t).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
+    $('locLink').href = `https://maps.apple.com/?ll=${L.lat.toFixed(5)},${L.lng.toFixed(5)}`;
+  }
+}
+$('locBtn').addEventListener('click', () => {
+  if (locBusy) return;
+  if (!navigator.geolocation) { locErr = '這個瀏覽器不支援定位'; locRender(); return; }
+  locBusy = true; locErr = ''; locRender();
+  navigator.geolocation.getCurrentPosition((pos) => {
+    locBusy = false;
+    localStorage.setItem('parkLoc', JSON.stringify({ lat: pos.coords.latitude, lng: pos.coords.longitude, t: Date.now() }));
+    log(`已記錄停車位置 ${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)}`, 'sys');
+    locRender();
+  }, (e) => {
+    locBusy = false;
+    locErr = e && e.code === 1 ? '沒有定位權限，請在瀏覽器設定允許' : '無法取得位置，請再試一次';
+    locRender();
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+});
+// 模擬的 8 個 ID（週期 20–1000 ms，資料緩慢變化）
+const CAN_SIM0 = () => ({ ctr: 0, rpm: 850, rpmT: 850, spd: 0, steer: 0, cool: 89, oil: 97, fuel: 62, cons: 11.2, tp: [2.42, 2.40, 2.48, 1.92] });
+const canSim = CAN_SIM0();
+const drift = (v, step, lo, hi) => Math.max(lo, Math.min(hi, v + (Math.random() - 0.5) * step));
+const CAN_SIM_IDS = [
+  { id: 0x0A0, ms: 20,   f: (s, k) => { s.rpm += (s.rpmT - s.rpm) * 0.05; if (Math.random() < 0.01) s.rpmT = 800 + Math.random() * 3200; const v = Math.round(s.rpm * 4); return [v >> 8, v & 255, 0x00, 0x1F, 0x00, 0x00, 0x00, k & 15]; } },   // 引擎轉速
+  { id: 0x0C4, ms: 20,   f: (s, k) => [Math.max(0, Math.min(255, Math.round((s.rpm - 800) / 16))), 0x00, 0x00, (k >> 2) & 255] },   // 油門
+  { id: 0x1A0, ms: 50,   f: (s) => { s.spd += (s.rpm - 900) / 4000; s.spd = Math.max(0, Math.min(120, s.spd)); const v = Math.round(s.spd * 100); const a = [v >> 8, v & 255]; return [...a, ...a, ...a, ...a]; } },   // 輪速 ×4
+  { id: 0x2B0, ms: 100,  f: (s, k) => { s.steer = Math.round(Math.sin(k / 40) * 900); const v = s.steer & 0xFFFF; return [v >> 8, v & 255, 0x07, k & 255, 0x00]; } },   // 方向盤角度
+  { id: 0x3D0, ms: 100,  f: (s, k) => { const st = (sim.lock === true ? 1 : 0) | (sim.frunk ? 2 : 0) | (sim.trunk ? 4 : 0) | (demoLid.door ? 24 : 0); return [st, 0x00, sim.led ? 1 : 0, k & 15]; } },   // 車門／前後箱／鎖
+  { id: 0x440, ms: 200,  f: (s) => [s.spd > 1 ? 0x03 : 0x00, 0x00, 0x40, 0x00, 0x00, 0x00] },   // 檔位／燈光
+  { id: 0x5F0, ms: 500,  f: (s) => { s.cool = drift(s.cool, 0.12, 88, 92); s.oil = drift(s.oil + (95 + (s.rpm - 800) / 320 - s.oil) * 0.01, 0.12, 95, 105); return [Math.round((s.cool + 40) * 2) >> 1, Math.round(s.oil + 40), 0x64, 0x00, 0x00, 0x00, 0x00, 0x00]; } },   // 水溫／油溫（+40 偏移）
+  { id: 0x3A0, ms: 1000, f: (s, k) => { s.tp = s.tp.map((v, i) => drift(v, 0.008, [2.38, 2.36, 2.44, 1.88][i], [2.46, 2.44, 2.52, 1.96][i])); return [...s.tp.map((v) => Math.round(v * 50)), 0x00, k & 15]; } },   // 胎壓 ×4（bar × 50）
+  { id: 0x6A0, ms: 1000, f: (s, k) => { const km = 23456 + Math.floor(k / 30); s.fuel = Math.max(5, s.fuel - 0.004); s.cons = drift(s.cons, 0.04, 10.6, 12.2); return [(km >> 16) & 255, (km >> 8) & 255, km & 255, Math.round(s.fuel * 2), Math.round(s.cons * 10)]; } },   // 里程／油量 ×0.5%／平均油耗 ×0.1
+];
+function canStartTimers() {
+  canStopTimers();
+  CAN_SIM_IDS.forEach((d) => { let k = 0; can.timers.push(setInterval(() => { if (simMode && can.running) canFrame(d.id, d.f(canSim, k++).map((b) => b & 255)); }, d.ms)); });
+  can.fpsAt = performance.now(); can.fpsN = 0;
+  can.ui = setInterval(() => canRender(false), 200);   // 畫面最多每 200 ms 更新一次
+}
+function canStopTimers() { can.timers.forEach(clearInterval); can.timers = []; clearInterval(can.ui); can.ui = 0; }
+function canSimStart() { Object.assign(canSim, CAN_SIM0()); carReset(); can.running = true; canStartTimers(); canRender(true); }
+function canSimStop() { can.running = false; canStopTimers(); canReset(); carReset(); canRender(true); }
+function canReset() { can.rows.clear(); can.total = 0; can.fps = 0; can.fpsN = 0; can.fpsAt = performance.now(); can.dirty = true; }
+function canRender(force) {
+  if (!$('view-can')) return;
+  const now = performance.now();
+  if (can.running && now - can.fpsAt >= 1000) { can.fps = Math.round(can.fpsN * 1000 / (now - can.fpsAt)); can.fpsN = 0; can.fpsAt = now; }
+  if (!can.running) can.fps = 0;
+  $('canState').textContent = !simMode ? '未連線' : can.running ? '模擬中' : '已暫停';
+  $('canDot').className = !simMode ? '' : can.running ? 'on' : 'pause';
+  $('canSimPill').hidden = !simMode;
+  $('canFps').textContent = can.fps;
+  $('canTotal').textContent = can.total.toLocaleString('en-US');
+  $('canRun').disabled = !simMode;
+  $('canRun').textContent = can.running || !simMode ? '暫停' : '開始';
+  $('canTxId').disabled = $('canTxData').disabled = $('canSendBtn').disabled = !simMode;
+  $('canTxNote').textContent = simMode ? '模擬模式：送出的訊框只會出現在上面表格，不會碰到藍牙或車子。' : '韌體尚未支援 CAN，目前只能用模擬模式預覽';
+  if ($('view-can').hidden && !force) return;
+  if (car.dirty || force) { car.dirty = false; carRender(); }
+  if (force) locRender();
+  if (!$('canAdv').open) return;   // 進階收合時不重畫表格
+  // 位元組變色要淡出，所以有剛變動的位元組時也要重畫
+  const fresh = [...can.rows.values()].some((r) => r.chg.some((t) => now - t < 450));
+  if (!force && !can.dirty && !fresh && !can._hl) return;
+  can._hl = fresh; can.dirty = false;
+  const f = $('canFilter').value.trim().toUpperCase().replace(/^0X/, '');
+  const rows = [...can.rows.values()].sort((a, b) => a.id - b.id).filter((r) => !f || hex(r.id, 3).includes(f));
+  let html = '<div class="r h"><span>ID</span><span>長</span><span>資料</span><span class="n">次數</span><span class="c">週期</span></div>';
+  if (!rows.length) {
+    const msg = !simMode ? '尚未接收 CAN 資料' : can.rows.size ? '沒有符合篩選的 ID' : can.running ? '等待訊框…' : '已暫停，按「開始」繼續接收';
+    $('canTable').innerHTML = html + `<div class="canempty">${msg}</div>`;
+    return;
+  }
+  for (const r of rows) {
+    const d = r.data.map((b, i) => `<span${now - (r.chg[i] || 0) < 450 && r.count > 1 ? ' class="ch"' : ''}>${hex(b)}</span>`).join(' ');
+    html += `<div class="r${r.tx ? ' tx' : ''}"><span class="i">${hex(r.id, 3)}</span><span>${r.data.length}</span><span class="d">${d}</span><span class="n">${r.count}</span><span class="c">${r.tx ? '送出' : r.period ? Math.round(r.period) : '—'}</span></div>`;
+  }
+  $('canTable').innerHTML = html;
+}
+$('canRun').addEventListener('click', () => {
+  if (!simMode) return;
+  can.running = !can.running;
+  if (can.running) { can.rows.forEach((r) => (r.last = 0)); canStartTimers(); } else canStopTimers();   // 繼續時不把暫停時間算進週期
+  canRender(true);
+});
+$('canClear').addEventListener('click', () => { canReset(); canRender(true); });
+$('canAdv').addEventListener('toggle', () => canRender(true));
+$('canFilter').addEventListener('input', () => {
+  const v = $('canFilter').value.replace(/[^0-9a-fA-F]/g, '').toUpperCase();
+  if (v !== $('canFilter').value) $('canFilter').value = v;
+  canRender(true);
+});
+$('canSendForm').addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!simMode) return;
+  const idS = $('canTxId').value.trim().replace(/^0x/i, '');
+  const dS = $('canTxData').value.trim().replace(/[\s,]+/g, ' ');
+  const id = parseInt(idS, 16);
+  if (!/^[0-9a-f]{1,3}$/i.test(idS) || id > 0x7FF) { log('CAN 送出失敗：ID 要是 000–7FF 的 16 進位', 'err'); return; }
+  let bytes = [];
+  if (dS) {
+    const parts = dS.includes(' ') ? dS.split(' ') : dS.match(/.{1,2}/g);
+    if (parts.some((x) => !/^[0-9a-f]{1,2}$/i.test(x)) || parts.length > 8) { log('CAN 送出失敗：資料要是 0–8 個 16 進位位元組，例如 01 FF 00', 'err'); return; }
+    bytes = parts.map((x) => parseInt(x, 16));
+  }
+  canFrame(id, bytes, true);
+  log(`（模擬）CAN 送出 ${hex(id, 3)} [${bytes.length}] ${bytes.map((b) => hex(b)).join(' ')}`.trim(), 'tx');
+  $('canTxData').blur(); $('canTxId').blur();
+  canRender(true);
+});
+
 // ===== 事件綁定 =====
 $('btnConnect').addEventListener('click', connect);
 $('btnMain').addEventListener('click', () => showView('account', 'details'));
 $('btnDisconnect').addEventListener('click', disconnect);
-$('btnClear').addEventListener('click', () => { $('log').innerHTML = ''; $('logMini').innerHTML = ''; });
 document.querySelectorAll('button[data-cmd]').forEach((b) =>
   b.addEventListener('click', () => {
     if (b.classList.contains('tile') && !b.closest('#sub-adv')) {
