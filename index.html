@@ -1573,9 +1573,34 @@ function carRender() {
   $('tpSum').style.color = low.length ? 'var(--warn)' : '';
 }
 // ===== 位置（只在輕觸時定位；存在這支手機）=====
-const SIM_LOC = { lat: 25.0340, lng: 121.5645, t: 0, sim: true };   // 模擬：台北
+const SIM_LOC = { lat: 25.0340, lng: 121.5645, t: 0, sim: true, place: '台北市 信義區', road: '市府路' };   // 模擬：台北（地名寫死，不連網）
 let locBusy = false, locErr = '';
 function locSaved() { try { return JSON.parse(localStorage.getItem('parkLoc') || 'null'); } catch (_) { return null; } }
+// 座標 → 「縣市 鄉鎮市區 路名」（zoom 18 才會帶最近建物的路名）：先用 OpenStreetMap Nominatim（免金鑰、CORS），失敗再用 BigDataCloud；結果存回 parkLoc，同一個位置只查一次
+let placeBusy = false, placeTried = null;
+const twN = (x) => (x || '').replace(/臺/g, '台');
+const isDist = (x) => /[區鄉鎮市]$/.test(x || '');
+function placeFromOSM(a) {
+  const top = a.county || a.city || a.state || '';
+  const sub = [a.suburb, a.town, a.county ? a.city : '', a.city_district, a.municipality, a.village].find((x) => isDist(x) && x !== top) || '';
+  return top ? twN(top + (sub ? ' ' + sub : '')) : '';
+}
+function placeFromBDC(d) {
+  const top = d.principalSubdivision || '';
+  const sub = [d.locality, d.city].find((x) => isDist(x) && x !== top) || '';
+  return top ? twN(top + (sub ? ' ' + sub : '')) : '';
+}
+async function placeLookup(L) {
+  placeBusy = true; placeTried = L.t;
+  const get = async (url) => { const r = await fetch(url, { signal: AbortSignal.timeout(8000) }); if (!r.ok) throw new Error(r.status); return r.json(); };
+  let place = '', road;
+  try { const d = await get(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${L.lat}&lon=${L.lng}&zoom=18&accept-language=zh-TW`); const a = d.address || {}; place = placeFromOSM(a); if (place) road = twN(a.road || a.pedestrian || a.footway || ''); } catch (_) {}
+  if (!place) { try { place = placeFromBDC(await get(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${L.lat}&longitude=${L.lng}&localityLanguage=zh-Hant`)); } catch (_) {} }
+  placeBusy = false;
+  const cur = locSaved();
+  if (place && cur && cur.t === L.t) localStorage.setItem('parkLoc', JSON.stringify({ ...cur, place, road: road || '' }));   // road '' = 查過沒有路名，不再重查
+  locRender();
+}
 function locRender() {
   const L = locSaved() || (simMode ? SIM_LOC : null);
   $('locMap').classList.toggle('none', !L);
@@ -1583,7 +1608,10 @@ function locRender() {
   if (locBusy) $('locLine').textContent = '定位中…';
   else if (locErr) $('locLine').textContent = locErr;
   else if (!L) $('locLine').textContent = '輕觸以定位';
-  else $('locLine').textContent = `${L.lat.toFixed(4)}, ${L.lng.toFixed(4)}${L.sim ? ' · 模擬' : ''}`;
+  else {
+    if (!L.sim && (!L.place || L.road === undefined) && placeTried !== L.t) placeLookup(L);
+    $('locLine').textContent = L.place ? L.place + (L.road ? ' ' + L.road : '') + (L.sim ? ' · 模擬' : '') : (placeBusy ? '定位中…' : '已記錄位置');
+  }
   if (L) {
     $('locTime').textContent = L.sim ? '模擬位置 · 輕觸改用目前位置' : '更新於 ' + new Date(L.t).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
     $('locLink').href = `https://maps.apple.com/?ll=${L.lat.toFixed(5)},${L.lng.toFixed(5)}`;
