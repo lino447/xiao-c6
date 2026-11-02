@@ -1480,6 +1480,8 @@ function renderSim() {
   $('simTools').hidden = !simMode;
   $('demoDoorList').hidden = !simMode;   // 開門動畫只在模擬模式顯示
   $('plateEdit').hidden = !simMode;   // 3D 車上的「設定車牌」鈕只在模擬模式顯示（車牌本身不受影響）
+  $('plateChipBox').style.display = simMode ? '' : 'none';   // 車牌預覽小卡也只在模擬模式顯示
+  if (!simMode && typeof plateView !== 'undefined' && plateView) { plateView = 0; if (typeof renderPlateChip === 'function') renderPlateChip(); if (typeof camGo === 'function') camGo(lidOrder.length ? LIDS[lidOrder[lidOrder.length - 1]].view : HOME_VIEW); }   // 關模擬時結束車牌特寫
   $('simToggle').classList.toggle('on', simMode);
   $('simToggle').setAttribute('aria-checked', simMode ? 'true' : 'false');
   $('simSw').classList.toggle('on', simMode);
