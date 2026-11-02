@@ -591,6 +591,14 @@
         <div class="li"><span class="k">運行時間</span><span class="v" id="upVal">—</span></div>
       </div>
 
+      <div class="sec">顯示</div>
+      <div class="list">
+        <button class="li" id="rotToggle" type="button" role="switch" aria-checked="true">
+          <span class="k">車輛自動旋轉<small>首頁 3D 車沒操作幾秒後會自己慢慢轉。</small></span>
+          <span class="switch on" id="rotSw"></span>
+        </button>
+      </div>
+
       <div class="sec" id="autoSec">連線</div>
       <div class="list">
         <button class="li" id="autoToggle" type="button">
@@ -803,6 +811,21 @@ setInterval(renderTimes, 1000);
 // 參考 新機器人1 的做法：模型裡前箱蓋、後箱蓋各自掛在一個鉸鏈節點（Frunk / Trunk）上，
 // 開啟時繞 X 軸轉動（前箱 -55°、後箱 +78°），1 秒、三次方緩入緩出。
 const carMv = $('carModel');
+// 車輛自動旋轉（帳戶頁開關，存在本機，預設開）
+let autoRot = localStorage.getItem('autoRotate') !== '0';
+function renderAutoRot() {
+  $('rotSw').classList.toggle('on', autoRot);
+  $('rotToggle').setAttribute('aria-checked', autoRot ? 'true' : 'false');
+}
+if (!autoRot) carMv.removeAttribute('auto-rotate');
+renderAutoRot();
+$('rotToggle').addEventListener('click', () => {
+  autoRot = !autoRot;
+  localStorage.setItem('autoRotate', autoRot ? '1' : '0');
+  renderAutoRot();
+  if (!autoRot) { carMv.autoRotate = false; if (typeof yawHome === 'function') yawHome(true); }   // 關掉：停轉並順順轉回正面
+  else if (!lidOrder.length && !plateView) carMv.autoRotate = true;
+});
 const HOME_ORBIT = '40deg 80deg 6.8m';   // 與 <model-viewer> 初始 camera-orbit 相同
 const HOME_TARGET = '0m 0.35m 0m';
 const HOME_FOV = '28deg';
@@ -961,7 +984,7 @@ function applyLid(k, open) {
     camGo(LIDS[lidOrder[lidOrder.length - 1]].view, true);     // 開啟或關上其中一個、另一個還開著：鏡頭平滑移到最後開啟那個蓋子的視角
     if (open) carousel.scrollTo({ left: 0, behavior: 'smooth' });
   } else {
-    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW, true); setTimeout(() => { if (!lidOrder.length) carMv.autoRotate = true; }, 650); }, LID_DUR * 1000);
+    lidCamTimer = setTimeout(() => { camGo(HOME_VIEW, true); setTimeout(() => { if (!lidOrder.length) carMv.autoRotate = autoRot; }, 650); }, LID_DUR * 1000);
   }
   lidKick();
 }
@@ -1190,7 +1213,7 @@ $('plateChip').addEventListener('click', () => {
   renderPlateChip();
   if (plateView) { camGo(PLATE_VIEWS[plateView]); return; }
   if (lidOrder.length) camGo(LIDS[lidOrder[lidOrder.length - 1]].view);     // 蓋子還開著：回到蓋子的視角
-  else { camGo(HOME_VIEW); setTimeout(() => { if (!lidOrder.length && !plateView) carMv.autoRotate = true; }, 650); }
+  else { camGo(HOME_VIEW); setTimeout(() => { if (!lidOrder.length && !plateView) carMv.autoRotate = autoRot; }, 650); }
 });
 // ===== 車輛名稱（手動命名，存在本機）=====
 const nameInput = $('nameInput');
